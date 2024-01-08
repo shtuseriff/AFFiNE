@@ -12,6 +12,7 @@ const logger = new DebugLogger('affine:blob-engine');
  */
 export class BlobEngine {
   private abort: AbortController | null = null;
+  private isOverCapacity: boolean = false;
 
   constructor(
     private readonly local: BlobStorage,
@@ -131,7 +132,13 @@ export class BlobEngine {
         .filter(r => !r.readonly)
         .map(peer =>
           peer.set(key, value).catch(err => {
-            logger.error('error when upload to peer', err);
+            // TODO: @darkskygit add error code
+            if (err.status === 403) {
+              this.isOverCapacity = true;
+              logger.error('Storage over capacity', err);
+            } else {
+              logger.error('Error when uploading to peer', err);
+            }
           })
         )
     )
@@ -141,6 +148,7 @@ export class BlobEngine {
             `blob ${key} update finish, but some peers failed to update`
           );
         } else {
+          this.isOverCapacity = false;
           logger.debug(`blob ${key} update finish`);
         }
       })
@@ -168,6 +176,10 @@ export class BlobEngine {
     }
 
     return Array.from(blobList);
+  }
+
+  isStorageOverCapacity() {
+    return this.isOverCapacity;
   }
 }
 

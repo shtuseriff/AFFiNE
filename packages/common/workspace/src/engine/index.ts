@@ -7,6 +7,7 @@ import type { SyncEngine, SyncEngineStatus } from './sync';
 
 export interface WorkspaceEngineStatus {
   sync: SyncEngineStatus;
+  blob: 'idle' | 'over-capacity';
 }
 
 /**
@@ -34,10 +35,12 @@ export class WorkspaceEngine {
   ) {
     this._status = {
       sync: sync.status,
+      blob: blob.isStorageOverCapacity() ? 'over-capacity' : 'idle',
     };
     sync.onStatusChange.on(status => {
       this.status = {
         sync: status,
+        blob: blob.isStorageOverCapacity() ? 'over-capacity' : 'idle',
       };
     });
   }
