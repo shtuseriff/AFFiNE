@@ -3,6 +3,8 @@ import {
   filterPageByRules,
   useCollectionManager,
 } from '@affine/core/components/page-list';
+import { usePublicPages } from '@affine/core/hooks/affine/use-is-shared-page';
+import type { Workspace } from '@affine/workspace/workspace';
 import type { PageMeta } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
@@ -10,17 +12,17 @@ import { useMemo } from 'react';
 import { allPageModeSelectAtom } from '../../atoms';
 import { collectionsCRUDAtom } from '../../atoms/collections';
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import type { BlockSuiteWorkspace } from '../../shared';
 
 export const useFilteredPageMetas = (
   route: 'all' | 'trash',
   pageMetas: PageMeta[],
-  workspace: BlockSuiteWorkspace
+  workspace: Workspace
 ) => {
-  const { isPreferredEdgeless } = usePageHelper(workspace);
+  const { isPreferredEdgeless } = usePageHelper(workspace.blockSuiteWorkspace);
   const pageMode = useAtomValue(allPageModeSelectAtom);
   const { currentCollection, isDefault } =
     useCollectionManager(collectionsCRUDAtom);
+  const { getPublicMode } = usePublicPages(workspace);
 
   const filteredPageMetas = useMemo(
     () =>
@@ -48,18 +50,23 @@ export const useFilteredPageMetas = (
           if (!currentCollection) {
             return true;
           }
+          const pageData = {
+            meta: pageMeta,
+            publicMode: getPublicMode(pageMeta.id),
+          };
           return isDefault
             ? filterPageByRules(
                 currentCollection.filterList,
                 currentCollection.allowList,
-                pageMeta
+                pageData
               )
-            : filterPage(currentCollection, pageMeta);
+            : filterPage(currentCollection, pageData);
         }),
     [
       currentCollection,
       isDefault,
       isPreferredEdgeless,
+      getPublicMode,
       pageMetas,
       pageMode,
       route,

@@ -261,7 +261,7 @@ export const AllPage = () => {
   const filteredPageMetas = useFilteredPageMetas(
     'all',
     pageMetas,
-    currentWorkspace.blockSuiteWorkspace
+    currentWorkspace
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
   const pageListRef = useRef<PageListHandle>(null);
