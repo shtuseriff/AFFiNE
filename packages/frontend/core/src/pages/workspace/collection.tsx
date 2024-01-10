@@ -91,7 +91,7 @@ export const Component = function CollectionPage() {
   return isEmpty(collection) ? (
     <Placeholder collection={collection} />
   ) : (
-    <AllPage />
+    <AllPage activeFilter="collections" />
   );
 };
 

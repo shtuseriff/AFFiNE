@@ -197,6 +197,16 @@ export const RootAppSidebar = ({
       });
   }, [blockSuiteWorkspace.id, navigateHelper, open, setting]);
 
+  const allPageActivePath = useMemo(() => {
+    if (
+      currentPath.startsWith(`/workspace/${currentWorkspaceId}/collection/`) ||
+      currentPath.startsWith(`/workspace/${currentWorkspaceId}/tag/`)
+    ) {
+      return paths.all(currentWorkspaceId);
+    }
+    return currentPath;
+  }, [currentPath, currentWorkspaceId, paths]);
+
   return (
     <AppSidebar
       router={router}
@@ -247,7 +257,7 @@ export const RootAppSidebar = ({
         />
         <RouteMenuLinkItem
           icon={<FolderIcon />}
-          currentPath={currentPath}
+          currentPath={allPageActivePath}
           path={paths.all(currentWorkspaceId)}
           onClick={backToAll}
         >

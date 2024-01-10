@@ -1,30 +1,55 @@
 import { RadioButton, RadioButtonGroup } from '@affine/component';
-import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
+import { WorkspaceSubPath } from '@affine/core/shared';
 import { useAtom } from 'jotai';
+import { useEffect, useState } from 'react';
 
-import { allPageModeSelectAtom } from '../../../atoms';
+import type { AllPageFilterOption } from '../../../atoms';
+import { allPageFilterSelectAtom } from '../../../atoms';
 import * as styles from './index.css';
 
-export const WorkspaceModeFilterTab = () => {
-  const t = useAFFiNEI18N();
-  const [value, setMode] = useAtom(allPageModeSelectAtom);
-  const handleValueChange = (value: string) => {
-    if (value !== 'all' && value !== 'page' && value !== 'edgeless') {
-      throw new Error('Invalid value for page mode option');
+export const WorkspaceModeFilterTab = ({
+  workspaceId,
+  activeFilter,
+}: {
+  workspaceId: string;
+  activeFilter: AllPageFilterOption;
+}) => {
+  const [value, setValue] = useState(activeFilter);
+  const [filterMode, setFilterMode] = useAtom(allPageFilterSelectAtom);
+  const { jumpToCollections, jumpToTags, jumpToSubPath } = useNavigateHelper();
+  const handleValueChange = (value: AllPageFilterOption) => {
+    switch (value) {
+      case 'collections':
+        jumpToCollections(workspaceId);
+        break;
+      case 'tags':
+        jumpToTags(workspaceId);
+        break;
+      case 'docs':
+        jumpToSubPath(workspaceId, WorkspaceSubPath.ALL);
+        break;
     }
-    setMode(value);
+    setValue(value);
+    setFilterMode(value);
   };
+
+  useEffect(() => {
+    if (filterMode !== value) {
+      setFilterMode(activeFilter);
+    }
+  }, [activeFilter, filterMode, setFilterMode, value]);
 
   return (
     <RadioButtonGroup value={value} onValueChange={handleValueChange}>
-      <RadioButton value="all" spanStyle={styles.filterTab}>
-        {t['com.affine.pageMode.all']()}
+      <RadioButton spanStyle={styles.filterTab} value="docs">
+        Docs
       </RadioButton>
-      <RadioButton spanStyle={styles.filterTab} value="page">
-        {t['com.affine.pageMode.page']()}
+      <RadioButton spanStyle={styles.filterTab} value="collections">
+        Collections
       </RadioButton>
-      <RadioButton spanStyle={styles.filterTab} value="edgeless">
-        {t['com.affine.pageMode.edgeless']()}
+      <RadioButton spanStyle={styles.filterTab} value="tags">
+        Tags
       </RadioButton>
     </RadioButtonGroup>
   );

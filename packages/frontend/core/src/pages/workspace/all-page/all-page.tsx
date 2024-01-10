@@ -1,4 +1,5 @@
 import { toast } from '@affine/component';
+import type { AllPageFilterOption } from '@affine/core/atoms';
 import {
   CollectionList,
   currentCollectionAtom,
@@ -30,6 +31,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import { NIL } from 'uuid';
 
 import { collectionsCRUDAtom } from '../../../atoms/collections';
@@ -48,6 +50,7 @@ import { EmptyPageList } from '../page-list-empty';
 import { useFilteredPageMetas } from '../pages';
 import * as styles from './all-page.css';
 import { FilterContainer } from './all-page-filter';
+import { CollectionListHeader } from './collection/collection-list';
 
 const PageListHeader = () => {
   const t = useAFFiNEI18N();
@@ -209,9 +212,11 @@ const NewPageButton = ({
 const AllPageHeader = ({
   workspace,
   showCreateNew,
+  activeFilter,
 }: {
   workspace: Workspace;
   showCreateNew: boolean;
+  activeFilter: AllPageFilterOption;
 }) => {
   const setting = useCollectionManager(collectionsCRUDAtom);
   const config = useAllPageListConfig();
@@ -243,7 +248,12 @@ const AllPageHeader = ({
             {isWindowsDesktop ? <WindowsAppControls /> : null}
           </div>
         }
-        center={<WorkspaceModeFilterTab />}
+        center={
+          <WorkspaceModeFilterTab
+            workspaceId={workspace.id}
+            activeFilter={activeFilter}
+          />
+        }
       />
       <FilterContainer />
     </>
@@ -251,7 +261,11 @@ const AllPageHeader = ({
 };
 
 // even though it is called all page, it is also being used for collection route as well
-export const AllPage = () => {
+export const AllPage = ({
+  activeFilter,
+}: {
+  activeFilter: AllPageFilterOption;
+}) => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { isPreferredEdgeless } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
@@ -264,12 +278,12 @@ export const AllPage = () => {
     currentWorkspace.blockSuiteWorkspace
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
-  const pageListRef = useRef<PageListHandle>(null);
+  const listRef = useRef<PageListHandle>(null);
 
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
 
   const hideFloatingToolbar = useCallback(() => {
-    pageListRef.current?.toggleSelectable();
+    listRef.current?.toggleSelectable();
   }, []);
 
   // make sure selected id is in the filtered list
@@ -280,36 +294,65 @@ export const AllPage = () => {
 
   const [hideHeaderCreateNewPage, setHideHeaderCreateNewPage] = useState(true);
 
+  const setting = useCollectionManager(collectionsCRUDAtom);
+
   return (
     <div className={styles.root}>
       <AllPageHeader
         workspace={currentWorkspace.blockSuiteWorkspace}
         showCreateNew={!hideHeaderCreateNewPage}
+        activeFilter={activeFilter}
       />
       {filteredPageMetas.length > 0 ? (
-        <>
-          <VirtualizedPageList
-            ref={pageListRef}
-            selectable="toggle"
-            draggable
-            atTopThreshold={80}
-            atTopStateChange={setHideHeaderCreateNewPage}
-            onSelectionActiveChange={setShowFloatingToolbar}
-            heading={<PageListHeader />}
-            selectedPageIds={filteredSelectedPageIds}
-            onSelectedPageIdsChange={setSelectedPageIds}
-            pages={filteredPageMetas}
-            rowAsLink
-            isPreferredEdgeless={isPreferredEdgeless}
-            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-            pageOperationsRenderer={pageOperationsRenderer}
-          />
-          <PageListFloatingToolbar
-            open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
-            selectedIds={filteredSelectedPageIds}
-            onClose={hideFloatingToolbar}
-          />
-        </>
+        activeFilter === 'collections' && setting.isDefault ? (
+          <>
+            <VirtualizedPageList
+              ref={listRef}
+              selectable="toggle"
+              draggable
+              atTopThreshold={80}
+              atTopStateChange={setHideHeaderCreateNewPage}
+              onSelectionActiveChange={setShowFloatingToolbar}
+              heading={<CollectionListHeader />}
+              selectedPageIds={filteredSelectedPageIds}
+              onSelectedPageIdsChange={setSelectedPageIds}
+              pages={filteredPageMetas}
+              rowAsLink
+              isPreferredEdgeless={isPreferredEdgeless}
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              pageOperationsRenderer={pageOperationsRenderer}
+            />
+            <PageListFloatingToolbar
+              open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
+              selectedIds={filteredSelectedPageIds}
+              onClose={hideFloatingToolbar}
+            />
+          </>
+        ) : (
+          <>
+            <VirtualizedPageList
+              ref={listRef}
+              selectable="toggle"
+              draggable
+              atTopThreshold={80}
+              atTopStateChange={setHideHeaderCreateNewPage}
+              onSelectionActiveChange={setShowFloatingToolbar}
+              heading={<PageListHeader />}
+              selectedPageIds={filteredSelectedPageIds}
+              onSelectedPageIdsChange={setSelectedPageIds}
+              pages={filteredPageMetas}
+              rowAsLink
+              isPreferredEdgeless={isPreferredEdgeless}
+              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+              pageOperationsRenderer={pageOperationsRenderer}
+            />
+            <PageListFloatingToolbar
+              open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
+              selectedIds={filteredSelectedPageIds}
+              onClose={hideFloatingToolbar}
+            />
+          </>
+        )
       ) : (
         <EmptyPageList
           type="all"
@@ -317,6 +360,7 @@ export const AllPage = () => {
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         />
       )}
+      {}
       <HubIsland />
     </div>
   );
@@ -328,6 +372,18 @@ export const Component = () => {
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const currentCollection = useSetAtom(currentCollectionAtom);
   const navigateHelper = useNavigateHelper();
+
+  const location = useLocation();
+  const activeFilter = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    const filterMode = query.get('filterMode');
+    if (filterMode === 'collections') {
+      return 'collections';
+    } else if (filterMode === 'tags') {
+      return 'tags';
+    }
+    return 'docs';
+  }, [location.search]);
 
   useEffect(() => {
     function checkJumpOnce() {
@@ -355,5 +411,5 @@ export const Component = () => {
     currentCollection(NIL);
   }, [currentCollection]);
 
-  return <AllPage />;
+  return <AllPage activeFilter={activeFilter} />;
 };
