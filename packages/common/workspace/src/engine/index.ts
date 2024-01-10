@@ -43,6 +43,12 @@ export class WorkspaceEngine {
         blob: blob.isStorageOverCapacity() ? 'over-capacity' : 'idle',
       };
     });
+    blob.onCapacityChange.on(isOverCapacity => {
+      this.status = {
+        sync: sync.status,
+        blob: isOverCapacity ? 'over-capacity' : 'idle',
+      };
+    });
   }
 
   start() {

@@ -1,4 +1,5 @@
 import { DebugLogger } from '@affine/debug';
+import { Slot } from '@blocksuite/global/utils';
 import { difference } from 'lodash-es';
 
 const logger = new DebugLogger('affine:blob-engine');
@@ -12,7 +13,15 @@ const logger = new DebugLogger('affine:blob-engine');
  */
 export class BlobEngine {
   private abort: AbortController | null = null;
-  private isOverCapacity: boolean = false;
+  private _isOverCapacity: boolean = false;
+  onCapacityChange = new Slot<boolean>();
+
+  private set isOverCapacity(value: boolean) {
+    if (this._isOverCapacity !== value) {
+      this._isOverCapacity = value;
+      this.onCapacityChange.emit(value);
+    }
+  }
 
   constructor(
     private readonly local: BlobStorage,
