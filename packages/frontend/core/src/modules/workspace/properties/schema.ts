@@ -92,7 +92,7 @@ const WorkspacePagePropertiesSchema = z.object({
 
 export const WorkspaceAffinePropertiesSchema = z.object({
   schema: WorkspaceAffinePropertiesSchemaSchema,
-  favouriates: z.record(WorkspaceFavoriteItemSchema),
+  favorites: z.record(WorkspaceFavoriteItemSchema),
   pageProperties: z.record(WorkspacePagePropertiesSchema),
 });
 

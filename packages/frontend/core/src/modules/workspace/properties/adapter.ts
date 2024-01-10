@@ -61,7 +61,7 @@ export class WorkspacePropertiesAdapter {
           },
         },
       },
-      favouriates: {},
+      favorites: {},
       pageProperties: {},
     });
   }
@@ -89,8 +89,8 @@ export class WorkspacePropertiesAdapter {
     return this.proxy.schema;
   }
 
-  get favouriates() {
-    return this.proxy.favouriates;
+  get favorites() {
+    return this.proxy.favorites;
   }
 
   get pageProperties() {
@@ -103,8 +103,8 @@ export class WorkspacePropertiesAdapter {
     return this.pageProperties[pageId];
   }
 
-  isFavouriated(id: string, type: WorkspaceFavoriteItem['type']) {
-    return this.favouriates[id]?.type === type;
+  isFavorite(id: string, type: WorkspaceFavoriteItem['type']) {
+    return this.favorites[id]?.type === type;
   }
 
   getJournalPageDateString(id: string) {

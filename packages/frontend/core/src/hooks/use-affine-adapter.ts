@@ -1,10 +1,13 @@
+import type { Workspace } from '@blocksuite/store';
 import { useAtomValue } from 'jotai';
-import { useEffect, useReducer } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 
-import { currentWorkspacePropertiesAdapterAtom } from '../modules/workspace';
+import {
+  currentWorkspacePropertiesAdapterAtom,
+  WorkspacePropertiesAdapter,
+} from '../modules/workspace';
 
-export function useWorkspacePropertiesAdapter() {
-  const adapter = useAtomValue(currentWorkspacePropertiesAdapterAtom);
+const useReactiveAdapter = (adapter: WorkspacePropertiesAdapter) => {
   const [, forceUpdate] = useReducer(c => c + 1, 0);
 
   useEffect(() => {
@@ -20,4 +23,17 @@ export function useWorkspacePropertiesAdapter() {
   }, [adapter]);
 
   return adapter;
+};
+
+export function useCurrentWorkspacePropertiesAdapter() {
+  const adapter = useAtomValue(currentWorkspacePropertiesAdapterAtom);
+  return useReactiveAdapter(adapter);
+}
+
+export function useWorkspacePropertiesAdapter(workspace: Workspace) {
+  const adapter = useMemo(
+    () => new WorkspacePropertiesAdapter(workspace),
+    [workspace]
+  );
+  return useReactiveAdapter(adapter);
 }

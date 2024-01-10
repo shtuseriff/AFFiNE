@@ -27,7 +27,7 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
   const bsWorkspaceHelper = useBlockSuiteWorkspaceHelper(workspace);
   const navigateHelper = useNavigateHelper();
 
-  const adapter = useWorkspacePropertiesAdapter();
+  const adapter = useWorkspacePropertiesAdapter(workspace);
 
   /**
    * @internal
@@ -47,7 +47,7 @@ export const useJournalHelper = (workspace: BlockSuiteWorkspace) => {
 
   const isPageJournal = useCallback(
     (pageId: string) => {
-      return isJournalString(adapter.getJournalPageDateString(pageId));
+      return !!adapter.getJournalPageDateString(pageId);
     },
     [adapter]
   );
