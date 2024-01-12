@@ -5,6 +5,10 @@ import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { WorkspaceSubPath } from '@affine/env/workspace';
 import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
+import type { ImageService } from '@blocksuite/blocks';
+// TODO(@darkskygit): remove this import after blocksuite bumped
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import type { BookmarkService } from '@blocksuite/blocks/dist/bookmark-block/bookmark-service';
 import type { AffineEditorContainer } from '@blocksuite/presets';
 import type { Page, Workspace } from '@blocksuite/store';
 import { appSettingAtom } from '@toeverything/infra/atom';
@@ -138,6 +142,24 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
           );
         }
       } catch {}
+
+      const imageSpec = editor.docSpecs.find(
+        s => s.schema.model.flavour === 'affine:image'
+      );
+      if (imageSpec?.service) {
+        (
+          imageSpec.service as unknown as ImageService
+        ).setImageProxyMiddlewareURL(runtimeConfig.imageProxyUrl);
+      }
+      const blockmarkSpec = editor.docSpecs.find(
+        s => s.schema.model.flavour === 'affine:bookmark'
+      );
+      if (blockmarkSpec?.service) {
+        (
+          blockmarkSpec.service as unknown as BookmarkService
+        ).setLinkPreviewEndpoint(runtimeConfig.linkPreviewUrl);
+      }
+
       setPageMode(currentPageId, mode);
       const dispose = editor.slots.pageLinkClicked.on(({ pageId }) => {
         return openPage(blockSuiteWorkspace.id, pageId);
