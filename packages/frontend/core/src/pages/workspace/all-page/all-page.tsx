@@ -1,17 +1,36 @@
 import { toast } from '@affine/component';
 import type { AllPageFilterOption } from '@affine/core/atoms';
+import { collectionsCRUDAtom } from '@affine/core/atoms/collections';
+import { HubIsland } from '@affine/core/components/affine/hub-island';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
   CollectionList,
+  type CollectionMeta,
   currentCollectionAtom,
   FloatingToolbar,
+  type ItemListHandle,
+  type ListItem,
   NewPageButton as PureNewPageButton,
   OperationCell,
-  type PageListHandle,
   useCollectionManager,
-  VirtualizedPageList,
+  VirtualizedList,
 } from '@affine/core/components/page-list';
+import {
+  CollectionListItemRenderer,
+  PageListItemRenderer,
+} from '@affine/core/components/page-list/page-group';
+import { Header } from '@affine/core/components/pure/header';
+import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
+import { useAllPageListConfig } from '@affine/core/hooks/affine/use-all-page-list-config';
+import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
+import { useDeleteCollectionInfo } from '@affine/core/hooks/affine/use-delete-collection-info';
+import { useFilteredPageMetas } from '@affine/core/hooks/affine/use-filtered-page-metas';
+import { useTrashModalHelper } from '@affine/core/hooks/affine/use-trash-modal-helper';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
+import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { performanceRenderLogger } from '@affine/core/shared';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -34,23 +53,84 @@ import {
 import { useLocation } from 'react-router-dom';
 import { NIL } from 'uuid';
 
-import { collectionsCRUDAtom } from '../../../atoms/collections';
-import { HubIsland } from '../../../components/affine/hub-island';
-import { usePageHelper } from '../../../components/blocksuite/block-suite-page-list/utils';
-import { Header } from '../../../components/pure/header';
-import { WindowsAppControls } from '../../../components/pure/header/windows-app-controls';
-import { WorkspaceModeFilterTab } from '../../../components/pure/workspace-mode-filter-tab';
-import { useAllPageListConfig } from '../../../hooks/affine/use-all-page-list-config';
-import { useBlockSuiteMetaHelper } from '../../../hooks/affine/use-block-suite-meta-helper';
-import { useDeleteCollectionInfo } from '../../../hooks/affine/use-delete-collection-info';
-import { useTrashModalHelper } from '../../../hooks/affine/use-trash-modal-helper';
-import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { performanceRenderLogger } from '../../../shared';
 import { EmptyPageList } from '../page-list-empty';
-import { useFilteredPageMetas } from '../pages';
 import * as styles from './all-page.css';
 import { FilterContainer } from './all-page-filter';
 import { CollectionListHeader } from './collection/collection-list';
+
+//TODO: remove mock data
+const mockFilteredCollectionMetas: CollectionMeta[] = [
+  {
+    id: '1',
+    title: 'Collection 1',
+    createDate: new Date(),
+    pageIds: ['11', '12', '13'],
+    collectionId: '1',
+  },
+  {
+    id: '2',
+    title: 'Collection 2',
+    createDate: new Date(),
+    pageIds: ['21', '22', '23'],
+    collectionId: '2',
+  },
+  {
+    id: '3',
+    title: 'Collection 3',
+    createDate: new Date(),
+    pageIds: ['31', '32', '33'],
+    collectionId: '3',
+  },
+  {
+    id: '4',
+    title: 'Collection 4',
+    createDate: new Date(),
+    pageIds: ['41', '42', '43'],
+    collectionId: '4',
+  },
+  {
+    id: '5',
+    title: 'Collection 5',
+    createDate: new Date(),
+    pageIds: ['51', '52', '53'],
+    collectionId: '5',
+  },
+  {
+    id: '6',
+    title: 'Collection 6',
+    createDate: new Date(),
+    pageIds: ['61', '62', '63'],
+    collectionId: '6',
+  },
+  {
+    id: '7',
+    title: 'Collection 7',
+    createDate: new Date(),
+    pageIds: ['71', '72', '73'],
+    collectionId: '7',
+  },
+  {
+    id: '8',
+    title: 'Collection 8',
+    createDate: new Date(),
+    pageIds: ['81', '82', '83'],
+    collectionId: '8',
+  },
+  {
+    id: '9',
+    title: 'Collection 9',
+    createDate: new Date(),
+    pageIds: ['91', '92', '93'],
+    collectionId: '9',
+  },
+  {
+    id: '10',
+    title: 'Collection 10',
+    createDate: new Date(),
+    pageIds: ['101', '102', '103'],
+    collectionId: '10',
+  },
+];
 
 const PageListHeader = () => {
   const t = useAFFiNEI18N();
@@ -271,14 +351,23 @@ export const AllPage = ({
     currentWorkspace.blockSuiteWorkspace
   );
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
-  const pageOperationsRenderer = usePageOperationsRenderer();
+  const pageOperations = usePageOperationsRenderer();
+
+  const pageOperationRenderer = useCallback(
+    (item: ListItem) => {
+      const page = item as PageMeta;
+      return pageOperations(page);
+    },
+    [pageOperations]
+  );
+
   const filteredPageMetas = useFilteredPageMetas(
     'all',
     pageMetas,
     currentWorkspace.blockSuiteWorkspace
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
-  const listRef = useRef<PageListHandle>(null);
+  const listRef = useRef<ItemListHandle>(null);
 
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
 
@@ -296,6 +385,19 @@ export const AllPage = ({
 
   const setting = useCollectionManager(collectionsCRUDAtom);
 
+  const selectedCollectionIds = useMemo(() => {
+    const ids = mockFilteredCollectionMetas.map(collection => collection.id);
+    return selectedPageIds.filter(id => ids.includes(id));
+  }, [selectedPageIds]);
+
+  const pageItemRenderer = useCallback((item: ListItem) => {
+    return <PageListItemRenderer {...item} />;
+  }, []);
+
+  const collectionItemRenderer = useCallback((item: ListItem) => {
+    return <CollectionListItemRenderer {...item} />;
+  }, []);
+
   return (
     <div className={styles.root}>
       <AllPageHeader
@@ -306,31 +408,31 @@ export const AllPage = ({
       {filteredPageMetas.length > 0 ? (
         activeFilter === 'collections' && setting.isDefault ? (
           <>
-            <VirtualizedPageList
+            <VirtualizedList
               ref={listRef}
               selectable="toggle"
-              draggable
+              draggable={false}
               atTopThreshold={80}
               atTopStateChange={setHideHeaderCreateNewPage}
               onSelectionActiveChange={setShowFloatingToolbar}
               heading={<CollectionListHeader />}
-              selectedPageIds={filteredSelectedPageIds}
-              onSelectedPageIdsChange={setSelectedPageIds}
-              pages={filteredPageMetas}
+              selectedIds={selectedCollectionIds}
+              onSelectedIdsChange={setSelectedPageIds}
+              items={mockFilteredCollectionMetas}
+              itemRenderer={collectionItemRenderer}
               rowAsLink
-              isPreferredEdgeless={isPreferredEdgeless}
               blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-              pageOperationsRenderer={pageOperationsRenderer}
+              operationsRenderer={pageOperationRenderer}
             />
             <PageListFloatingToolbar
-              open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
-              selectedIds={filteredSelectedPageIds}
+              open={showFloatingToolbar && selectedCollectionIds.length > 0}
+              selectedIds={selectedCollectionIds}
               onClose={hideFloatingToolbar}
             />
           </>
         ) : (
           <>
-            <VirtualizedPageList
+            <VirtualizedList
               ref={listRef}
               selectable="toggle"
               draggable
@@ -338,13 +440,14 @@ export const AllPage = ({
               atTopStateChange={setHideHeaderCreateNewPage}
               onSelectionActiveChange={setShowFloatingToolbar}
               heading={<PageListHeader />}
-              selectedPageIds={filteredSelectedPageIds}
-              onSelectedPageIdsChange={setSelectedPageIds}
-              pages={filteredPageMetas}
+              selectedIds={filteredSelectedPageIds}
+              onSelectedIdsChange={setSelectedPageIds}
+              items={filteredPageMetas}
               rowAsLink
               isPreferredEdgeless={isPreferredEdgeless}
               blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-              pageOperationsRenderer={pageOperationsRenderer}
+              operationsRenderer={pageOperationRenderer}
+              itemRenderer={pageItemRenderer}
             />
             <PageListFloatingToolbar
               open={showFloatingToolbar && filteredSelectedPageIds.length > 0}

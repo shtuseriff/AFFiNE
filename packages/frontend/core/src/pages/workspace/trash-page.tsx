@@ -1,9 +1,16 @@
 import { toast } from '@affine/component';
+import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-page-list/utils';
 import {
   currentCollectionAtom,
+  type ListItem,
   TrashOperationCell,
-  VirtualizedPageList,
+  VirtualizedList,
 } from '@affine/core/components/page-list';
+import { PageListItemRenderer } from '@affine/core/components/page-list/page-group';
+import { Header } from '@affine/core/components/pure/header';
+import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
+import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
+import { useFilteredPageMetas } from '@affine/core/hooks/affine/use-filtered-page-metas';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -16,12 +23,7 @@ import { useCallback } from 'react';
 import { type LoaderFunction } from 'react-router-dom';
 import { NIL } from 'uuid';
 
-import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
-import { Header } from '../../components/pure/header';
-import { WindowsAppControls } from '../../components/pure/header/windows-app-controls';
-import { useBlockSuiteMetaHelper } from '../../hooks/affine/use-block-suite-meta-helper';
 import { EmptyPageList } from './page-list-empty';
-import { useFilteredPageMetas } from './pages';
 import * as styles from './trash-page.css';
 
 const isWindowsDesktop = environment.isDesktop && environment.isWindows;
@@ -74,7 +76,8 @@ export const TrashPage = () => {
   const t = useAFFiNEI18N();
 
   const pageOperationsRenderer = useCallback(
-    (page: PageMeta) => {
+    (item: ListItem) => {
+      const page = item as PageMeta;
       const onRestorePage = () => {
         restoreFromTrash(page.id);
         toast(
@@ -94,20 +97,25 @@ export const TrashPage = () => {
         />
       );
     },
+
     [permanentlyDeletePage, restoreFromTrash, t]
   );
 
+  const pageItemRenderer = useCallback((item: ListItem) => {
+    return <PageListItemRenderer {...item} />;
+  }, []);
   return (
     <div className={styles.root}>
       <TrashHeader />
       {filteredPageMetas.length > 0 ? (
-        <VirtualizedPageList
-          pages={filteredPageMetas}
+        <VirtualizedList
+          items={filteredPageMetas}
           rowAsLink
           groupBy={false}
           isPreferredEdgeless={isPreferredEdgeless}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-          pageOperationsRenderer={pageOperationsRenderer}
+          operationsRenderer={pageOperationsRenderer}
+          itemRenderer={pageItemRenderer}
         />
       ) : (
         <EmptyPageList

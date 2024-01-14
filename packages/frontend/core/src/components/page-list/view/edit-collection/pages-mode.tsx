@@ -8,7 +8,9 @@ import { type ReactNode, useCallback } from 'react';
 
 import { FilterList } from '../../filter/filter-list';
 import { VariableSelect } from '../../filter/vars';
-import { VirtualizedPageList } from '../../virtualized-page-list';
+import { PageListItemRenderer } from '../../page-group';
+import type { ListItem } from '../../types';
+import { VirtualizedList } from '../../virtualized-page-list';
 import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
 import { EmptyList } from './select-page';
@@ -46,9 +48,16 @@ export const PagesMode = ({
     });
   }, [collection, updateCollection]);
   const pageOperationsRenderer = useCallback(
-    (page: PageMeta) => allPageListConfig.favoriteRender(page),
+    (item: ListItem) => {
+      const page = item as PageMeta;
+      return allPageListConfig.favoriteRender(page);
+    },
     [allPageListConfig]
   );
+
+  const pageItemRenderer = useCallback((item: ListItem) => {
+    return <PageListItemRenderer {...item} />;
+  }, []);
   return (
     <>
       <input
@@ -102,22 +111,23 @@ export const PagesMode = ({
             </div>
           ) : null}
           {searchedList.length ? (
-            <VirtualizedPageList
+            <VirtualizedList
               className={styles.pageList}
-              pages={searchedList}
+              items={searchedList}
               groupBy={false}
               blockSuiteWorkspace={allPageListConfig.workspace}
               selectable
-              onSelectedPageIdsChange={ids => {
+              onSelectedIdsChange={ids => {
                 updateCollection({
                   ...collection,
                   allowList: ids,
                 });
               }}
-              pageOperationsRenderer={pageOperationsRenderer}
-              selectedPageIds={collection.allowList}
+              itemRenderer={pageItemRenderer}
+              operationsRenderer={pageOperationsRenderer}
+              selectedIds={collection.allowList}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
-            ></VirtualizedPageList>
+            />
           ) : (
             <EmptyList search={searchText} />
           )}

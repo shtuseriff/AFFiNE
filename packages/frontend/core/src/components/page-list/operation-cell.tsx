@@ -19,8 +19,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { FavoriteTag } from './components/favorite-tag';
+import * as styles from './list.css';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
-import * as styles from './page-list.css';
 import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
 
 export interface OperationCellProps {

@@ -1,11 +1,8 @@
 import clsx from 'clsx';
-import {
-  type BaseSyntheticEvent,
-  forwardRef,
-  type PropsWithChildren,
-} from 'react';
+import { type BaseSyntheticEvent, forwardRef } from 'react';
 
-import * as styles from './page-list.css';
+import * as styles from './list.css';
+import type { ColWrapperProps } from './types';
 
 export function isToday(date: Date): boolean {
   const today = new Date();
@@ -70,14 +67,6 @@ export const formatDate = (date: Date): string => {
   // MM-DD HH:mm
   return `${month}-${day} ${hours}:${minutes}`;
 };
-
-export type ColWrapperProps = PropsWithChildren<{
-  flex?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
-  alignment?: 'start' | 'center' | 'end';
-  styles?: React.CSSProperties;
-  hideInSmallContainer?: boolean;
-}> &
-  React.HTMLAttributes<Element>;
 
 export const ColWrapper = forwardRef<HTMLDivElement, ColWrapperProps>(
   function ColWrapper(

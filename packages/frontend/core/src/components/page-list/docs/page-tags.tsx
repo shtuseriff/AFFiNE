@@ -5,8 +5,8 @@ import { assignInlineVars } from '@vanilla-extract/dynamic';
 import clsx from 'clsx';
 import { useMemo } from 'react';
 
+import { stopPropagation } from '../utils';
 import * as styles from './page-tags.css';
-import { stopPropagation } from './utils';
 
 export interface PageTagsProps {
   tags: Tag[];

@@ -1,12 +1,13 @@
 import { Trans } from '@affine/i18n';
-import type { PageMeta } from '@blocksuite/store';
 
-import type { PageGroupDefinition, PageGroupProps } from './types';
+import type { ItemGroupDefinition, ItemGroupProps, ListItem } from './types';
 import { type DateKey } from './types';
 import { betweenDaysAgo, withinDaysAgo } from './utils';
 
 // todo: optimize date matchers
-const getDateGroupDefinitions = (key: DateKey): PageGroupDefinition[] => [
+const getDateGroupDefinitions = <T extends ListItem>(
+  key: DateKey
+): ItemGroupDefinition<T>[] => [
   {
     id: 'today',
     label: <Trans i18nKey="com.affine.today" />,
@@ -35,38 +36,38 @@ const getDateGroupDefinitions = (key: DateKey): PageGroupDefinition[] => [
   },
 ];
 
-const pageGroupDefinitions = {
+const itemGroupDefinitions = {
   createDate: getDateGroupDefinitions('createDate'),
   updatedDate: getDateGroupDefinitions('updatedDate'),
   // add more here later
   // todo: some page group definitions maybe dynamic
 };
 
-export function pagesToPageGroups(
-  pages: PageMeta[],
+export function itemsToItemGroups<T extends ListItem>(
+  items: T[],
   key?: DateKey
-): PageGroupProps[] {
+): ItemGroupProps<T>[] {
   if (!key) {
     return [
       {
         id: 'all',
-        items: pages,
-        allItems: pages,
+        items: items,
+        allItems: items,
       },
     ];
   }
 
   // assume pages are already sorted, we will use the page order to determine the group order
-  const groupDefs = pageGroupDefinitions[key];
-  const groups: PageGroupProps[] = [];
+  const groupDefs = itemGroupDefinitions[key];
+  const groups: ItemGroupProps<T>[] = [];
 
-  for (const page of pages) {
+  for (const item of items) {
     // for a single page, there could be multiple groups that it belongs to
-    const matchedGroups = groupDefs.filter(def => def.match(page));
+    const matchedGroups = groupDefs.filter(def => def.match(item));
     for (const groupDef of matchedGroups) {
       const group = groups.find(g => g.id === groupDef.id);
       if (group) {
-        group.items.push(page);
+        group.items.push(item);
       } else {
         const label =
           typeof groupDef.label === 'function'
@@ -75,8 +76,8 @@ export function pagesToPageGroups(
         groups.push({
           id: groupDef.id,
           label: label,
-          items: [page],
-          allItems: pages,
+          items: [item],
+          allItems: items,
         });
       }
     }
