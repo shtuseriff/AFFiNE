@@ -1,8 +1,6 @@
-import { pushNotificationAtom } from '@affine/component/notification-center';
 import { Avatar } from '@affine/component/ui/avatar';
 import { Loading } from '@affine/component/ui/loading';
 import { Tooltip } from '@affine/component/ui/tooltip';
-import { useUserQuota } from '@affine/core/hooks/use-quota';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
@@ -16,8 +14,7 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import bytes from 'bytes';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { debounce, mean } from 'lodash-es';
 import {
   forwardRef,
@@ -96,48 +93,6 @@ const useSyncEngineSyncProgress = () => {
 
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
 
-  //FIXME: need to use owner quota
-  const quota = useUserQuota();
-  const pushNotification = useSetAtom(pushNotificationAtom);
-  const checkBlobSize = useCallback(
-    (blob: Blob) => {
-      const size = blob.size;
-
-      if (
-        currentWorkspace.flavour === WorkspaceFlavour.LOCAL ||
-        quota === null
-      ) {
-        const result = size < bytes('100MB');
-        if (!result) {
-          pushNotification({
-            title: 'You have reached the limit',
-            message:
-              'The maximum file upload size for local workspaces is 100MB',
-            key: Date.now().toString(),
-            type: 'error',
-          });
-          return false;
-        }
-      } else if (
-        currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD &&
-        quota
-      ) {
-        const result = size < quota.blobLimit;
-        if (!result) {
-          pushNotification({
-            title: 'Upload failed',
-            message: 'Please upgrade your plan to upload more files',
-            key: Date.now().toString(),
-            type: 'error',
-          });
-          return false;
-        }
-      }
-      return true;
-    },
-    [currentWorkspace.flavour, pushNotification, quota]
-  );
-
   // debounce sync engine status
   useEffect(() => {
     setSyncEngineStatus(currentWorkspace.engine.sync.status);
@@ -153,18 +108,10 @@ const useSyncEngineSyncProgress = () => {
         }
       )
     );
-    const disposableBlobSet = currentWorkspace.engine.blob.onBlobSet.on(
-      blobSetEventArgs => {
-        console.log('blob set', blobSetEventArgs);
-        const result = checkBlobSize(blobSetEventArgs.value);
-        blobSetEventArgs.updateShouldProceed(result);
-      }
-    );
     return () => {
       disposable?.dispose();
-      disposableBlobSet?.dispose();
     };
-  }, [checkBlobSize, currentWorkspace]);
+  }, [currentWorkspace]);
 
   const progress = useMemo(() => {
     if (!syncEngineStatus?.remotes || syncEngineStatus?.remotes.length === 0) {
