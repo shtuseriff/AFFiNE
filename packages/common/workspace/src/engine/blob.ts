@@ -2,6 +2,12 @@ import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
 import { difference } from 'lodash-es';
 
+export interface BlobSetEventArgs {
+  key: string;
+  value: Blob;
+  updateShouldProceed: (proceed: boolean) => void;
+}
+
 const logger = new DebugLogger('affine:blob-engine');
 
 /**
@@ -15,6 +21,7 @@ export class BlobEngine {
   private abort: AbortController | null = null;
   private _isOverCapacity: boolean = false;
   onCapacityChange = new Slot<boolean>();
+  onBlobSet = new Slot<BlobSetEventArgs>();
 
   private set isOverCapacity(value: boolean) {
     if (this._isOverCapacity !== value) {
@@ -132,6 +139,18 @@ export class BlobEngine {
       throw new Error('local peer is readonly');
     }
 
+    let shouldProceed = true;
+
+    const updateShouldProceed = (proceed: boolean) => {
+      shouldProceed = proceed;
+    };
+
+    this.onBlobSet.emit({ key, value, updateShouldProceed });
+
+    if (!shouldProceed) {
+      return;
+    }
+
     // await upload to the local peer
     await this.local.set(key, value);
 
@@ -141,8 +160,8 @@ export class BlobEngine {
         .filter(r => !r.readonly)
         .map(peer =>
           peer.set(key, value).catch(err => {
-            // TODO: @darkskygit add error code
-            if (err.status === 403) {
+            const code = err[0].extensions.code;
+            if (code === 413) {
               this.isOverCapacity = true;
               logger.error('Storage over capacity', err);
             } else {
