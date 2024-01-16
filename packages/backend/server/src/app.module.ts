@@ -8,6 +8,7 @@ import { EventModule } from './fundamentals/event';
 import { MailModule } from './fundamentals/mailer';
 import { MetricsModule } from './fundamentals/metrics';
 import { PrismaModule } from './fundamentals/prisma';
+import { RuntimeSettingModule } from './fundamentals/runtime';
 import { SessionModule } from './fundamentals/session';
 import { RateLimiterModule } from './fundamentals/throttler';
 import { BusinessModules } from './modules';
@@ -23,6 +24,7 @@ export const FunctionalityModules: Array<Type | DynamicModule> = [
   RateLimiterModule,
   AuthModule,
   MailModule,
+  RuntimeSettingModule,
 ];
 
 @Module({

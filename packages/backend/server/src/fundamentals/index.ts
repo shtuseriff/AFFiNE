@@ -8,6 +8,7 @@ export { EventEmitter, type EventPayload, OnEvent } from './event';
 export { MailService } from './mailer';
 export { CallCounter, CallTimer, metrics } from './metrics';
 export { PrismaService } from './prisma';
+export { Runtime } from './runtime';
 export { SessionService } from './session';
 export * from './storage';
 export { AuthThrottlerGuard, CloudThrottlerGuard, Throttle } from './throttler';
