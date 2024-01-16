@@ -3,7 +3,7 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { MultiSelectIcon } from '@blocksuite/icons';
 import clsx from 'clsx';
 import { selectAtom } from 'jotai/utils';
-import { type MouseEventHandler, useCallback, useMemo } from 'react';
+import { type MouseEventHandler, useCallback } from 'react';
 
 import { ListHeaderCell } from './components/list-header-cell';
 import * as styles from './page-header.css';
@@ -12,7 +12,6 @@ import {
   listHandlersAtom,
   listPropsAtom,
   selectionStateAtom,
-  showOperationsAtom,
   sorterAtom,
   useAtom,
   useAtomValue,
@@ -70,7 +69,7 @@ const PageListHeaderCheckbox = () => {
   );
 };
 
-const PageListHeaderTitleCell = () => {
+export const PageListHeaderTitleCell = () => {
   const t = useAFFiNEI18N();
   return (
     <div className={styles.headerTitleCell}>
@@ -83,10 +82,12 @@ const PageListHeaderTitleCell = () => {
 const hideHeaderAtom = selectAtom(listPropsAtom, props => props.hideHeader);
 
 // the table header for page list
-export const PageListTableHeader = () => {
-  const t = useAFFiNEI18N();
+export const PageListTableHeader = ({
+  headerCols,
+}: {
+  headerCols: HeaderColDef[];
+}) => {
   const [sorter, setSorter] = useAtom(sorterAtom);
-  const showOperations = useAtomValue(showOperationsAtom);
   const hideHeader = useAtomValue(hideHeaderAtom);
   const selectionState = useAtomValue(selectionStateAtom);
   const onSort = useCallback(
@@ -99,46 +100,6 @@ export const PageListTableHeader = () => {
     },
     [setSorter]
   );
-  const headerCols = useMemo(() => {
-    const cols: (HeaderColDef | boolean)[] = [
-      {
-        key: 'title',
-        content: <PageListHeaderTitleCell />,
-        flex: 6,
-        alignment: 'start',
-        sortable: true,
-      },
-      {
-        key: 'tags',
-        content: t['Tags'](),
-        flex: 3,
-        alignment: 'end',
-      },
-      {
-        key: 'createDate',
-        content: t['Created'](),
-        flex: 1,
-        sortable: true,
-        alignment: 'end',
-        hideInSmallContainer: true,
-      },
-      {
-        key: 'updatedDate',
-        content: t['Updated'](),
-        flex: 1,
-        sortable: true,
-        alignment: 'end',
-        hideInSmallContainer: true,
-      },
-      showOperations && {
-        key: 'actions',
-        content: '',
-        flex: 1,
-        alignment: 'end',
-      },
-    ];
-    return cols.filter((def): def is HeaderColDef => !!def);
-  }, [t, showOperations]);
 
   if (hideHeader) {
     return false;

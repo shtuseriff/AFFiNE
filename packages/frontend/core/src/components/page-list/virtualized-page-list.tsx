@@ -14,7 +14,6 @@ import { Virtuoso } from 'react-virtuoso';
 import { ListInnerWrapper } from './list';
 import * as styles from './list.css';
 import { ItemGroupHeader } from './page-group';
-import { PageListTableHeader } from './page-header';
 import {
   groupCollapseStateAtom,
   groupsAtom,
@@ -189,7 +188,7 @@ const ListInner = ({
     (_index: number, data: VirtuosoItem<ListItem>) => {
       switch (data.type) {
         case 'sticky-header':
-          return <PageListTableHeader />;
+          return props.headerRenderer?.();
         case 'group-header':
           return <ItemGroupHeader {...data.data} />;
         case 'item':

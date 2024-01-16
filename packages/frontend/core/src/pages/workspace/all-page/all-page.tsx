@@ -19,6 +19,8 @@ import {
   CollectionListItemRenderer,
   PageListItemRenderer,
 } from '@affine/core/components/page-list/page-group';
+import { PageListTableHeader } from '@affine/core/components/page-list/page-header';
+import { useHeaderColDef } from '@affine/core/components/page-list/use-header-col-def';
 import { Header } from '@affine/core/components/pure/header';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { WorkspaceModeFilterTab } from '@affine/core/components/pure/workspace-mode-filter-tab';
@@ -390,6 +392,22 @@ export const AllPage = ({
     return selectedPageIds.filter(id => ids.includes(id));
   }, [selectedPageIds]);
 
+  const { pageHeaderColsDef, collectionHeaderColsDef } = useHeaderColDef();
+  const pageHeaderCols = useMemo(
+    () => pageHeaderColsDef(true),
+    [pageHeaderColsDef]
+  );
+  const collectionHeaderCols = useMemo(
+    () => collectionHeaderColsDef(true),
+    [collectionHeaderColsDef]
+  );
+  const pageHeaderRenderer = useCallback(() => {
+    return <PageListTableHeader headerCols={pageHeaderCols} />;
+  }, [pageHeaderCols]);
+  const collectionHeaderRenderer = useCallback(() => {
+    return <PageListTableHeader headerCols={collectionHeaderCols} />;
+  }, [collectionHeaderCols]);
+
   const pageItemRenderer = useCallback((item: ListItem) => {
     return <PageListItemRenderer {...item} />;
   }, []);
@@ -423,6 +441,7 @@ export const AllPage = ({
               rowAsLink
               blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
               operationsRenderer={pageOperationRenderer}
+              headerRenderer={collectionHeaderRenderer}
             />
             <PageListFloatingToolbar
               open={showFloatingToolbar && selectedCollectionIds.length > 0}
@@ -448,6 +467,7 @@ export const AllPage = ({
               blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
               operationsRenderer={pageOperationRenderer}
               itemRenderer={pageItemRenderer}
+              headerRenderer={pageHeaderRenderer}
             />
             <PageListFloatingToolbar
               open={showFloatingToolbar && filteredSelectedPageIds.length > 0}

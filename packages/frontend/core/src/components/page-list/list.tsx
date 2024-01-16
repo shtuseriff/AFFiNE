@@ -9,6 +9,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
 } from 'react';
 
@@ -25,6 +26,7 @@ import {
   useSetAtom,
 } from './scoped-atoms';
 import type { ItemListHandle, ListItem, ListProps } from './types';
+import { useHeaderColDef } from './use-header-col-def';
 
 /**
  * Given a list of pages, render a list of pages
@@ -136,10 +138,15 @@ ListInnerWrapper.displayName = 'ListInnerWrapper';
 
 const ListInner = (props: ListProps<ListItem>) => {
   const groups = useAtomValue(groupsAtom);
+  const { pageHeaderColsDef } = useHeaderColDef();
+  const headerCols = useMemo(
+    () => pageHeaderColsDef(false),
+    [pageHeaderColsDef]
+  );
   const hideHeader = props.hideHeader;
   return (
     <div className={clsx(props.className, styles.root)}>
-      {!hideHeader ? <PageListTableHeader /> : null}
+      {!hideHeader ? <PageListTableHeader headerCols={headerCols} /> : null}
       <div className={styles.groupsContainer}>
         {groups.map(group => (
           <ItemGroup key={group.id} {...group} />
