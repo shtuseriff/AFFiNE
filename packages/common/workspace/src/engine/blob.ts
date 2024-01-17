@@ -148,7 +148,8 @@ export class BlobEngine {
     this.onBlobSet.emit({ key, value, updateShouldProceed });
 
     if (!shouldProceed) {
-      return;
+      logger.error('blob over limit, abort set');
+      return key;
     }
 
     // await upload to the local peer

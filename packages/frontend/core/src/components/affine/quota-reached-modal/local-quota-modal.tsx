@@ -37,10 +37,11 @@ export const LocalQuotaModal = () => {
   return (
     <ConfirmModal
       open={open}
-      title={'You have reached the limit'}
-      description={
-        'The maximum file upload size for local workspaces is 100MB.'
-      }
+      title={t['com.affine.payment.blob-limit.title']()}
+      description={t['com.affine.payment.blob-limit.description.local']({
+        quota: '100MB',
+      })}
+      onOpenChange={setOpen}
       cancelButtonOptions={{
         hidden: true,
       }}

@@ -1,12 +1,11 @@
 import { ConfirmModal } from '@affine/component/ui/modal';
-import { openQuotaModalAtom } from '@affine/core/atoms';
+import { openQuotaModalAtom, openSettingModalAtom } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useUserQuota } from '@affine/core/hooks/use-quota';
 import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
-import bytes from 'bytes';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
 
 export const CloudQuotaModal = () => {
@@ -17,33 +16,53 @@ export const CloudQuotaModal = () => {
   const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
   const userQuota = useUserQuota();
   const isFreePlanOwner = useMemo(() => {
-    return isOwner && userQuota?.name.toLowerCase() === 'free';
-  }, [isOwner, userQuota?.name]);
+    return isOwner && userQuota?.humanReadable.name.toLowerCase() === 'free';
+  }, [isOwner, userQuota?.humanReadable.name]);
 
   const checkBlobSize = useCallback(
     (blob: Blob) => {
       const size = BigInt(blob.size);
-      return size < BigInt(workspaceQuota.blobLimit);
+      return size < workspaceQuota.blobLimit;
     },
-    [workspaceQuota.blobLimit]
+    [workspaceQuota]
   );
 
-  const onConfirm = useCallback(() => {
+  const setSettingModalAtom = useSetAtom(openSettingModalAtom);
+  const handleUpgradeConfirm = useCallback(() => {
+    if (isFreePlanOwner) {
+      setSettingModalAtom({
+        open: true,
+        activeTab: 'plans',
+      });
+    }
+
     setOpen(false);
-  }, [setOpen]);
+  }, [isFreePlanOwner, setOpen, setSettingModalAtom]);
 
   const description = useMemo(() => {
     if (userQuota && isFreePlanOwner) {
-      return `${userQuota.name} users can upload files with a maximum size of ${userQuota.humanReadable.blobLimit}. You can upgrade your account to unlock a maximum file size of 100MB.`;
+      return t['com.affine.payment.blob-limit.description.owner.free']({
+        planName: userQuota.humanReadable.name,
+        currentQuota: userQuota.humanReadable.blobLimit,
+        upgradeQuota: '100MB',
+      });
     }
-    if (isOwner && userQuota?.name.toLowerCase() === 'pro') {
-      return `${userQuota.name} users can upload files with a maximum size of ${userQuota.humanReadable.blobLimit}.`;
+    if (isOwner && userQuota?.humanReadable.name.toLowerCase() === 'pro') {
+      return t['com.affine.payment.blob-limit.description.owner.pro']({
+        planName: userQuota.humanReadable.name,
+        quota: userQuota.humanReadable.blobLimit,
+      });
     }
-
-    return `The maximum file upload size for this joined workspace is ${bytes(
-      workspaceQuota.blobLimit
-    )}. You can contact the owner of this workspace.`;
-  }, [isFreePlanOwner, isOwner, userQuota, workspaceQuota.blobLimit]);
+    return t['com.affine.payment.blob-limit.description.member']({
+      quota: workspaceQuota.humanReadable.blobLimit,
+    });
+  }, [
+    isFreePlanOwner,
+    isOwner,
+    t,
+    userQuota,
+    workspaceQuota.humanReadable.blobLimit,
+  ]);
 
   useEffect(() => {
     const disposable = currentWorkspace.engine.blob.onBlobSet.on(
@@ -62,13 +81,13 @@ export const CloudQuotaModal = () => {
   return (
     <ConfirmModal
       open={open}
-      title={'You have reached the limit'}
+      title={t['com.affine.payment.blob-limit.title']()}
+      onOpenChange={setOpen}
       description={description}
-      cancelText={t['com.affine.enableAffineCloudModal.button.cancel']()}
       cancelButtonOptions={{
         hidden: !isFreePlanOwner,
       }}
-      onConfirm={onConfirm}
+      onConfirm={handleUpgradeConfirm}
       confirmButtonOptions={{
         type: 'primary',
         children: isFreePlanOwner
