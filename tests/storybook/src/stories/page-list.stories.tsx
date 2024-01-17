@@ -6,10 +6,10 @@ import {
   type ListProps,
   ListScrollContainer,
   NewPageButton,
-  OperationCell,
-  type OperationCellProps,
   PageListItem,
   type PageListItemProps,
+  PageOperationCell,
+  type PageOperationCellProps,
   PageTags,
   type PageTagsProps,
 } from '@affine/core/components/page-list';
@@ -30,9 +30,9 @@ export default {
   },
 } satisfies Meta;
 
-export const AffineOperationCell: StoryFn<OperationCellProps> = ({
+export const AffineOperationCell: StoryFn<PageOperationCellProps> = ({
   ...props
-}) => <OperationCell {...props} />;
+}) => <PageOperationCell {...props} />;
 
 AffineOperationCell.args = {
   favorite: false,

@@ -66,3 +66,12 @@ export const EmptyPageList = ({
     </div>
   );
 };
+
+export const EmptyCollectionList = ({ heading }: { heading: ReactNode }) => {
+  return (
+    <div className={styles.pageListEmptyStyle}>
+      {heading && <div>{heading}</div>}
+      <Empty title={`There's no collection here yet`} />
+    </div>
+  );
+};

@@ -9,7 +9,7 @@ import type {
   DraggableTitleCellData,
   PageListItemProps,
 } from '../types';
-import { ColWrapper, formatDate, stopPropagation } from '../utils';
+import { ColWrapper, stopPropagation } from '../utils';
 import * as styles from './collections-list-item.css';
 
 const ListTitleCell = ({
@@ -69,34 +69,6 @@ const CollectionSelectionCell = ({
         checked={!!selected}
         onChange={onSelectionChange}
       />
-    </div>
-  );
-};
-
-const CollectionCreateDateCell = ({
-  createDate,
-}: Pick<CollectionListItemProps, 'createDate'>) => {
-  return (
-    <div
-      data-testid="page-list-item-date"
-      data-date-raw={createDate}
-      className={styles.dateCell}
-    >
-      {formatDate(createDate)}
-    </div>
-  );
-};
-
-const CollectionUpdatedDateCell = ({
-  updatedDate,
-}: Pick<CollectionListItemProps, 'updatedDate'>) => {
-  return (
-    <div
-      data-testid="page-list-item-date"
-      data-date-raw={updatedDate}
-      className={styles.dateCell}
-    >
-      {updatedDate ? formatDate(updatedDate) : '-'}
     </div>
   );
 };
@@ -168,12 +140,6 @@ export const CollectionListItem = (props: CollectionListItemProps) => {
           alignment="end"
           style={{ overflow: 'visible' }}
         ></ColWrapper>
-      </ColWrapper>
-      <ColWrapper flex={1} alignment="end" hideInSmallContainer>
-        <CollectionCreateDateCell createDate={props.createDate} />
-      </ColWrapper>
-      <ColWrapper flex={1} alignment="end" hideInSmallContainer>
-        <CollectionUpdatedDateCell updatedDate={props.updatedDate} />
       </ColWrapper>
       {props.operations ? (
         <ColWrapper

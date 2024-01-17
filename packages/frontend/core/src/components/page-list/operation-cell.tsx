@@ -6,24 +6,34 @@ import {
   MenuItem,
   Tooltip,
 } from '@affine/component';
+import type { Collection, DeleteCollectionInfo } from '@affine/env/filter';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
+  DeleteIcon,
   DeletePermanentlyIcon,
+  EditIcon,
   FavoritedIcon,
   FavoriteIcon,
+  FilterIcon,
   MoreVerticalIcon,
   OpenInNewIcon,
   ResetIcon,
 } from '@blocksuite/icons';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { FavoriteTag } from './components/favorite-tag';
 import * as styles from './list.css';
 import { DisablePublicSharing, MoveToTrash } from './operation-menu-items';
+import type { useCollectionManager } from './use-collection-manager';
 import { ColWrapper, stopPropagationWithoutPrevent } from './utils';
+import {
+  type AllPageListConfig,
+  useEditCollection,
+  useEditCollectionName,
+} from './view';
 
-export interface OperationCellProps {
+export interface PageOperationCellProps {
   favorite: boolean;
   isPublic: boolean;
   link: string;
@@ -32,14 +42,14 @@ export interface OperationCellProps {
   onDisablePublicSharing: () => void;
 }
 
-export const OperationCell = ({
+export const PageOperationCell = ({
   favorite,
   isPublic,
   link,
   onToggleFavoritePage,
   onRemoveToTrash,
   onDisablePublicSharing,
-}: OperationCellProps) => {
+}: PageOperationCellProps) => {
   const t = useAFFiNEI18N();
   const [openDisableShared, setOpenDisableShared] = useState(false);
   const OperationMenu = (
@@ -176,5 +186,108 @@ export const TrashOperationCell = ({
         }}
       />
     </ColWrapper>
+  );
+};
+
+export interface CollectionOperationCellProps {
+  collection: Collection;
+  info: DeleteCollectionInfo;
+  config: AllPageListConfig;
+  setting: ReturnType<typeof useCollectionManager>;
+}
+
+export const CollectionOperationCell = ({
+  collection,
+  config,
+  setting,
+  info,
+}: CollectionOperationCellProps) => {
+  const t = useAFFiNEI18N();
+
+  const { open: openEditCollectionModal, node: editModal } =
+    useEditCollection(config);
+
+  const { open: openEditCollectionNameModal, node: editNameModal } =
+    useEditCollectionName({
+      title: t['com.affine.editCollection.renameCollection'](),
+    });
+
+  const handleEditName = useCallback(() => {
+    // use openRenameModal if it is in the sidebar collection list
+    openEditCollectionNameModal(collection.name)
+      .then(name => {
+        return setting.updateCollection({ ...collection, name });
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [collection, openEditCollectionNameModal, setting]);
+
+  const handleEdit = useCallback(() => {
+    openEditCollectionModal(collection)
+      .then(collection => {
+        return setting.updateCollection(collection);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [setting, collection, openEditCollectionModal]);
+
+  const handleDelete = useCallback(() => {
+    return setting.deleteCollection(info, collection.id);
+  }, [setting, info, collection]);
+
+  const OperationMenu = (
+    <>
+      <MenuItem
+        onClick={handleEditName}
+        preFix={
+          <MenuIcon>
+            <EditIcon />
+          </MenuIcon>
+        }
+      >
+        {t['com.affine.collection.menu.rename']()}
+      </MenuItem>
+      <MenuItem
+        onClick={handleEdit}
+        preFix={
+          <MenuIcon>
+            <FilterIcon />
+          </MenuIcon>
+        }
+      >
+        {t['com.affine.collection.menu.edit']()}
+      </MenuItem>
+      <MenuItem
+        onClick={handleDelete}
+        preFix={
+          <MenuIcon>
+            <DeleteIcon />
+          </MenuIcon>
+        }
+        type="danger"
+      >
+        {t['Delete']()}
+      </MenuItem>
+    </>
+  );
+  return (
+    <>
+      {editModal}
+      {editNameModal}
+      <ColWrapper alignment="start">
+        <Menu
+          items={OperationMenu}
+          contentOptions={{
+            align: 'end',
+          }}
+        >
+          <IconButton type="plain">
+            <MoreVerticalIcon />
+          </IconButton>
+        </Menu>
+      </ColWrapper>
+    </>
   );
 };

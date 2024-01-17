@@ -6,20 +6,24 @@ import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-pa
 import {
   CollectionList,
   type CollectionMeta,
+  CollectionOperationCell,
+  createEmptyCollection,
   currentCollectionAtom,
   FloatingToolbar,
   type ItemListHandle,
   type ListItem,
   NewPageButton as PureNewPageButton,
-  OperationCell,
+  PageOperationCell,
   useCollectionManager,
+  useEditCollectionName,
+  useSavedCollections,
   VirtualizedList,
 } from '@affine/core/components/page-list';
 import {
   CollectionListItemRenderer,
   PageListItemRenderer,
 } from '@affine/core/components/page-list/page-group';
-import { PageListTableHeader } from '@affine/core/components/page-list/page-header';
+import { ListTableHeader } from '@affine/core/components/page-list/page-header';
 import { useHeaderColDef } from '@affine/core/components/page-list/use-header-col-def';
 import { Header } from '@affine/core/components/pure/header';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
@@ -33,6 +37,7 @@ import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-m
 import { useNavigateHelper } from '@affine/core/hooks/use-navigate-helper';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { performanceRenderLogger } from '@affine/core/shared';
+import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -41,9 +46,10 @@ import {
   PlusIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import { type PageMeta, type Workspace } from '@blocksuite/store';
 import clsx from 'clsx';
 import { useAtomValue, useSetAtom } from 'jotai';
+import { nanoid } from 'nanoid';
 import {
   type PropsWithChildren,
   useCallback,
@@ -55,95 +61,30 @@ import {
 import { useLocation } from 'react-router-dom';
 import { NIL } from 'uuid';
 
-import { EmptyPageList } from '../page-list-empty';
+import { EmptyCollectionList, EmptyPageList } from '../page-list-empty';
 import * as styles from './all-page.css';
 import { FilterContainer } from './all-page-filter';
 import { CollectionListHeader } from './collection/collection-list';
 
 //TODO: remove mock data
-const mockFilteredCollectionMetas: CollectionMeta[] = [
-  {
-    id: '1',
-    title: 'Collection 1',
-    createDate: new Date(),
-    pageIds: ['11', '12', '13'],
-    collectionId: '1',
-  },
-  {
-    id: '2',
-    title: 'Collection 2',
-    createDate: new Date(),
-    pageIds: ['21', '22', '23'],
-    collectionId: '2',
-  },
-  {
-    id: '3',
-    title: 'Collection 3',
-    createDate: new Date(),
-    pageIds: ['31', '32', '33'],
-    collectionId: '3',
-  },
-  {
-    id: '4',
-    title: 'Collection 4',
-    createDate: new Date(),
-    pageIds: ['41', '42', '43'],
-    collectionId: '4',
-  },
-  {
-    id: '5',
-    title: 'Collection 5',
-    createDate: new Date(),
-    pageIds: ['51', '52', '53'],
-    collectionId: '5',
-  },
-  {
-    id: '6',
-    title: 'Collection 6',
-    createDate: new Date(),
-    pageIds: ['61', '62', '63'],
-    collectionId: '6',
-  },
-  {
-    id: '7',
-    title: 'Collection 7',
-    createDate: new Date(),
-    pageIds: ['71', '72', '73'],
-    collectionId: '7',
-  },
-  {
-    id: '8',
-    title: 'Collection 8',
-    createDate: new Date(),
-    pageIds: ['81', '82', '83'],
-    collectionId: '8',
-  },
-  {
-    id: '9',
-    title: 'Collection 9',
-    createDate: new Date(),
-    pageIds: ['91', '92', '93'],
-    collectionId: '9',
-  },
-  {
-    id: '10',
-    title: 'Collection 10',
-    createDate: new Date(),
-    pageIds: ['101', '102', '103'],
-    collectionId: '10',
-  },
-];
 
-const PageListHeader = () => {
+const PageListHeader = ({ workspaceId }: { workspaceId: string }) => {
   const t = useAFFiNEI18N();
   const setting = useCollectionManager(collectionsCRUDAtom);
+  const { jumpToCollections } = useNavigateHelper();
+  const handleJumpToCollections = useCallback(() => {
+    jumpToCollections(workspaceId);
+  }, [jumpToCollections, workspaceId]);
+
   const title = useMemo(() => {
     if (setting.isDefault) {
       return t['com.affine.all-pages.header']();
     }
     return (
       <>
-        {t['com.affine.collections.header']()} /
+        <div style={{ cursor: 'pointer' }} onClick={handleJumpToCollections}>
+          {t['com.affine.collections.header']()} /
+        </div>
         <div className={styles.titleIcon}>
           <ViewLayersIcon />
         </div>
@@ -152,7 +93,12 @@ const PageListHeader = () => {
         </div>
       </>
     );
-  }, [setting.currentCollection.name, setting.isDefault, t]);
+  }, [
+    handleJumpToCollections,
+    setting.currentCollection.name,
+    setting.isDefault,
+    t,
+  ]);
 
   return (
     <div className={styles.allPagesHeader}>
@@ -181,7 +127,7 @@ const usePageOperationsRenderer = () => {
         });
       };
       return (
-        <OperationCell
+        <PageOperationCell
           favorite={!!page.favorite}
           isPublic={!!page.isPublic}
           onDisablePublicSharing={onDisablePublicSharing}
@@ -206,6 +152,26 @@ const usePageOperationsRenderer = () => {
       );
     },
     [currentWorkspace.id, setTrashModal, t, toggleFavorite]
+  );
+
+  return pageOperationsRenderer;
+};
+const useCollectionOperationsRenderer = () => {
+  const setting = useCollectionManager(collectionsCRUDAtom);
+  const config = useAllPageListConfig();
+  const info = useDeleteCollectionInfo();
+  const pageOperationsRenderer = useCallback(
+    (collection: Collection) => {
+      return (
+        <CollectionOperationCell
+          info={info}
+          collection={collection}
+          setting={setting}
+          config={config}
+        />
+      );
+    },
+    [config, info, setting]
   );
 
   return pageOperationsRenderer;
@@ -348,12 +314,14 @@ export const AllPage = ({
 }: {
   activeFilter: AllPageFilterOption;
 }) => {
+  const t = useAFFiNEI18N();
   const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const { isPreferredEdgeless } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
   const pageMetas = useBlockSuitePageMeta(currentWorkspace.blockSuiteWorkspace);
   const pageOperations = usePageOperationsRenderer();
+  const collectionOperations = useCollectionOperationsRenderer();
 
   const pageOperationRenderer = useCallback(
     (item: ListItem) => {
@@ -363,12 +331,25 @@ export const AllPage = ({
     [pageOperations]
   );
 
+  const collectionOperationRenderer = useCallback(
+    (item: ListItem) => {
+      const collection = item as CollectionMeta;
+      console.log('collection', collection);
+
+      return collectionOperations(collection);
+    },
+    [collectionOperations]
+  );
+
   const filteredPageMetas = useFilteredPageMetas(
     'all',
     pageMetas,
     currentWorkspace.blockSuiteWorkspace
   );
   const [selectedPageIds, setSelectedPageIds] = useState<string[]>([]);
+  const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
+    []
+  );
   const listRef = useRef<ItemListHandle>(null);
 
   const [showFloatingToolbar, setShowFloatingToolbar] = useState(false);
@@ -386,13 +367,24 @@ export const AllPage = ({
   const [hideHeaderCreateNewPage, setHideHeaderCreateNewPage] = useState(true);
 
   const setting = useCollectionManager(collectionsCRUDAtom);
+  const { collections } = useSavedCollections(collectionsCRUDAtom);
+  const filteredSelectedCollectionIds = useMemo(() => {
+    const ids = collections.map(collection => collection.id);
+    return selectedCollectionIds.filter(id => ids.includes(id));
+  }, [collections, selectedCollectionIds]);
 
-  const selectedCollectionIds = useMemo(() => {
-    const ids = mockFilteredCollectionMetas.map(collection => collection.id);
-    return selectedPageIds.filter(id => ids.includes(id));
-  }, [selectedPageIds]);
+  const collectionMetas = useMemo(() => {
+    const collectionsList: CollectionMeta[] = collections.map(collection => {
+      return {
+        ...collection,
+        title: collection.name,
+      };
+    });
+    return collectionsList;
+  }, [collections]);
 
   const { pageHeaderColsDef, collectionHeaderColsDef } = useHeaderColDef();
+  const navigateHelper = useNavigateHelper();
   const pageHeaderCols = useMemo(
     () => pageHeaderColsDef(true),
     [pageHeaderColsDef]
@@ -402,10 +394,10 @@ export const AllPage = ({
     [collectionHeaderColsDef]
   );
   const pageHeaderRenderer = useCallback(() => {
-    return <PageListTableHeader headerCols={pageHeaderCols} />;
+    return <ListTableHeader headerCols={pageHeaderCols} />;
   }, [pageHeaderCols]);
   const collectionHeaderRenderer = useCallback(() => {
-    return <PageListTableHeader headerCols={collectionHeaderCols} />;
+    return <ListTableHeader headerCols={collectionHeaderCols} />;
   }, [collectionHeaderCols]);
 
   const pageItemRenderer = useCallback((item: ListItem) => {
@@ -415,6 +407,69 @@ export const AllPage = ({
   const collectionItemRenderer = useCallback((item: ListItem) => {
     return <CollectionListItemRenderer {...item} />;
   }, []);
+  const { open, node } = useEditCollectionName({
+    title: t['com.affine.editCollection.createCollection'](),
+    showTips: true,
+  });
+
+  const handleCreateCollection = useCallback(() => {
+    open('')
+      .then(name => {
+        const id = nanoid();
+        setting.createCollection(createEmptyCollection(id, { name }));
+        navigateHelper.jumpToCollection(currentWorkspace.id, id);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }, [currentWorkspace.id, navigateHelper, open, setting]);
+
+  const collectionVirtualizedList = useMemo(() => {
+    return (
+      <>
+        <VirtualizedList
+          ref={listRef}
+          selectable="toggle"
+          draggable={false}
+          groupBy={false}
+          atTopThreshold={80}
+          atTopStateChange={setHideHeaderCreateNewPage}
+          onSelectionActiveChange={setShowFloatingToolbar}
+          heading={
+            <CollectionListHeader
+              node={node}
+              onCreate={handleCreateCollection}
+            />
+          }
+          selectedIds={filteredSelectedCollectionIds}
+          onSelectedIdsChange={setSelectedCollectionIds}
+          items={collectionMetas}
+          itemRenderer={collectionItemRenderer}
+          rowAsLink
+          blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+          operationsRenderer={collectionOperationRenderer}
+          headerRenderer={collectionHeaderRenderer}
+        />
+        <PageListFloatingToolbar
+          open={showFloatingToolbar && selectedCollectionIds.length > 0}
+          selectedIds={selectedCollectionIds}
+          onClose={hideFloatingToolbar}
+        />
+      </>
+    );
+  }, [
+    collectionHeaderRenderer,
+    collectionItemRenderer,
+    collectionMetas,
+    collectionOperationRenderer,
+    currentWorkspace.blockSuiteWorkspace,
+    filteredSelectedCollectionIds,
+    handleCreateCollection,
+    hideFloatingToolbar,
+    node,
+    selectedCollectionIds,
+    showFloatingToolbar,
+  ]);
 
   return (
     <div className={styles.root}>
@@ -423,67 +478,52 @@ export const AllPage = ({
         showCreateNew={!hideHeaderCreateNewPage}
         activeFilter={activeFilter}
       />
-      {filteredPageMetas.length > 0 ? (
-        activeFilter === 'collections' && setting.isDefault ? (
-          <>
-            <VirtualizedList
-              ref={listRef}
-              selectable="toggle"
-              draggable={false}
-              atTopThreshold={80}
-              atTopStateChange={setHideHeaderCreateNewPage}
-              onSelectionActiveChange={setShowFloatingToolbar}
-              heading={<CollectionListHeader />}
-              selectedIds={selectedCollectionIds}
-              onSelectedIdsChange={setSelectedPageIds}
-              items={mockFilteredCollectionMetas}
-              itemRenderer={collectionItemRenderer}
-              rowAsLink
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-              operationsRenderer={pageOperationRenderer}
-              headerRenderer={collectionHeaderRenderer}
-            />
-            <PageListFloatingToolbar
-              open={showFloatingToolbar && selectedCollectionIds.length > 0}
-              selectedIds={selectedCollectionIds}
-              onClose={hideFloatingToolbar}
-            />
-          </>
+      {activeFilter === 'collections' && setting.isDefault ? (
+        collectionMetas.length > 0 ? (
+          collectionVirtualizedList
         ) : (
-          <>
-            <VirtualizedList
-              ref={listRef}
-              selectable="toggle"
-              draggable
-              atTopThreshold={80}
-              atTopStateChange={setHideHeaderCreateNewPage}
-              onSelectionActiveChange={setShowFloatingToolbar}
-              heading={<PageListHeader />}
-              selectedIds={filteredSelectedPageIds}
-              onSelectedIdsChange={setSelectedPageIds}
-              items={filteredPageMetas}
-              rowAsLink
-              isPreferredEdgeless={isPreferredEdgeless}
-              blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
-              operationsRenderer={pageOperationRenderer}
-              itemRenderer={pageItemRenderer}
-              headerRenderer={pageHeaderRenderer}
-            />
-            <PageListFloatingToolbar
-              open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
-              selectedIds={filteredSelectedPageIds}
-              onClose={hideFloatingToolbar}
-            />
-          </>
+          <EmptyCollectionList
+            heading={
+              <CollectionListHeader
+                node={node}
+                onCreate={handleCreateCollection}
+              />
+            }
+          />
         )
+      ) : filteredPageMetas.length > 0 ? (
+        <>
+          <VirtualizedList
+            ref={listRef}
+            selectable="toggle"
+            draggable
+            atTopThreshold={80}
+            atTopStateChange={setHideHeaderCreateNewPage}
+            onSelectionActiveChange={setShowFloatingToolbar}
+            heading={<PageListHeader workspaceId={currentWorkspace.id} />}
+            selectedIds={filteredSelectedPageIds}
+            onSelectedIdsChange={setSelectedPageIds}
+            items={filteredPageMetas}
+            rowAsLink
+            isPreferredEdgeless={isPreferredEdgeless}
+            blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
+            operationsRenderer={pageOperationRenderer}
+            itemRenderer={pageItemRenderer}
+            headerRenderer={pageHeaderRenderer}
+          />
+          <PageListFloatingToolbar
+            open={showFloatingToolbar && filteredSelectedPageIds.length > 0}
+            selectedIds={filteredSelectedPageIds}
+            onClose={hideFloatingToolbar}
+          />
+        </>
       ) : (
         <EmptyPageList
           type="all"
-          heading={<PageListHeader />}
+          heading={<PageListHeader workspaceId={currentWorkspace.id} />}
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
         />
       )}
-      {}
       <HubIsland />
     </div>
   );

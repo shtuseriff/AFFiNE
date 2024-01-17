@@ -1,26 +1,17 @@
-import type { Tag } from '@affine/env/filter';
+import type { Collection, Tag } from '@affine/env/filter';
 import type { PageMeta, Workspace } from '@blocksuite/store';
 import type { PropsWithChildren, ReactNode } from 'react';
 import type { To } from 'react-router-dom';
 
 export type ListItem = PageMeta | CollectionMeta | TagMeta;
 
-export type CollectionMeta = {
-  id: string;
+export interface CollectionMeta extends Collection {
   title: string;
-  createDate: Date;
-  updatedDate?: Date;
-  pageIds: string[];
-  collectionId: string;
-};
+}
 
 export type TagMeta = {
   id: string;
   title: string;
-  createDate: Date;
-  updatedDate?: Date;
-  pageIds: string[];
-  tagId: string;
 };
 // TODO: consider reducing the number of props here
 // using type instead of interface to make it Record compatible
@@ -46,7 +37,7 @@ export type CollectionListItemProps = {
   collectionId: string;
   icon: JSX.Element;
   title: ReactNode; // using ReactNode to allow for rich content rendering
-  createDate: Date;
+  createDate?: Date;
   updatedDate?: Date;
   to?: To; // whether or not to render this item as a Link
   draggable?: boolean; // whether or not to allow dragging this item

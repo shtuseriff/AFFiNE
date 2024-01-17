@@ -23,7 +23,7 @@ import { stopPropagation } from './utils';
 // when list selectable = true, the checkbox will be presented
 // when internal selection state is not enabled, it is a clickable <ListIcon /> that enables the selection state
 // when internal selection state is enabled, it is a checkbox that reflects the selection state
-const PageListHeaderCheckbox = () => {
+const ListHeaderCheckbox = () => {
   const [selectionState, setSelectionState] = useAtom(selectionStateAtom);
   const items = useAtomValue(itemsAtom);
   const onActivateSelection: MouseEventHandler = useCallback(
@@ -69,11 +69,11 @@ const PageListHeaderCheckbox = () => {
   );
 };
 
-export const PageListHeaderTitleCell = () => {
+export const ListHeaderTitleCell = () => {
   const t = useAFFiNEI18N();
   return (
     <div className={styles.headerTitleCell}>
-      <PageListHeaderCheckbox />
+      <ListHeaderCheckbox />
       {t['Title']()}
     </div>
   );
@@ -82,7 +82,7 @@ export const PageListHeaderTitleCell = () => {
 const hideHeaderAtom = selectAtom(listPropsAtom, props => props.hideHeader);
 
 // the table header for page list
-export const PageListTableHeader = ({
+export const ListTableHeader = ({
   headerCols,
 }: {
   headerCols: HeaderColDef[];

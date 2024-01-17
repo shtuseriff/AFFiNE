@@ -15,7 +15,7 @@ import {
 
 import * as styles from './list.css';
 import { ItemGroup } from './page-group';
-import { PageListTableHeader } from './page-header';
+import { ListTableHeader } from './page-header';
 import {
   groupsAtom,
   listPropsAtom,
@@ -146,7 +146,7 @@ const ListInner = (props: ListProps<ListItem>) => {
   const hideHeader = props.hideHeader;
   return (
     <div className={clsx(props.className, styles.root)}>
-      {!hideHeader ? <PageListTableHeader headerCols={headerCols} /> : null}
+      {!hideHeader ? <ListTableHeader headerCols={headerCols} /> : null}
       <div className={styles.groupsContainer}>
         {groups.map(group => (
           <ItemGroup key={group.id} {...group} />

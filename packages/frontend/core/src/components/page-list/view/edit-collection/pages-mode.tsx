@@ -4,12 +4,14 @@ import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { FilterIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import clsx from 'clsx';
-import { type ReactNode, useCallback } from 'react';
+import { type ReactNode, useCallback, useMemo } from 'react';
 
 import { FilterList } from '../../filter/filter-list';
 import { VariableSelect } from '../../filter/vars';
 import { PageListItemRenderer } from '../../page-group';
+import { ListTableHeader } from '../../page-header';
 import type { ListItem } from '../../types';
+import { useHeaderColDef } from '../../use-header-col-def';
 import { VirtualizedList } from '../../virtualized-page-list';
 import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
@@ -55,9 +57,17 @@ export const PagesMode = ({
     [allPageListConfig]
   );
 
+  const { pageHeaderColsDef } = useHeaderColDef();
+  const pageHeaderCols = useMemo(
+    () => pageHeaderColsDef(true),
+    [pageHeaderColsDef]
+  );
   const pageItemRenderer = useCallback((item: ListItem) => {
     return <PageListItemRenderer {...item} />;
   }, []);
+  const pageHeaderRenderer = useCallback(() => {
+    return <ListTableHeader headerCols={pageHeaderCols} />;
+  }, [pageHeaderCols]);
   return (
     <>
       <input
@@ -125,6 +135,7 @@ export const PagesMode = ({
               }}
               itemRenderer={pageItemRenderer}
               operationsRenderer={pageOperationsRenderer}
+              headerRenderer={pageHeaderRenderer}
               selectedIds={collection.allowList}
               isPreferredEdgeless={allPageListConfig.isEdgeless}
             />

@@ -89,7 +89,7 @@ export const Component = function CollectionPage() {
     return null;
   }
   return isEmpty(collection) ? (
-    <Placeholder collection={collection} />
+    <Placeholder collection={collection} workspaceId={workspace.id} />
   ) : (
     <AllPage activeFilter="collections" />
   );
@@ -97,9 +97,16 @@ export const Component = function CollectionPage() {
 
 const isWindowsDesktop = environment.isDesktop && environment.isWindows;
 
-const Placeholder = ({ collection }: { collection: Collection }) => {
+const Placeholder = ({
+  collection,
+  workspaceId,
+}: {
+  collection: Collection;
+  workspaceId: string;
+}) => {
   const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
   const { node, open } = useEditCollection(useAllPageListConfig());
+  const { jumpToCollections } = useNavigateHelper();
   const openPageEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
     updateCollection(ret);
@@ -118,6 +125,11 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
   }, []);
   const t = useAFFiNEI18N();
   const leftSidebarOpen = useAtomValue(appSidebarOpenAtom);
+
+  const handleJumpToCollections = useCallback(() => {
+    jumpToCollections(workspaceId);
+  }, [jumpToCollections, workspaceId]);
+
   return (
     <div
       style={{
@@ -143,9 +155,11 @@ const Placeholder = ({ collection }: { collection: Collection }) => {
             display: 'flex',
             alignItems: 'center',
             gap: 4,
+            cursor: 'pointer',
             color: 'var(--affine-text-secondary-color)',
             ['WebkitAppRegion' as string]: 'no-drag',
           }}
+          onClick={handleJumpToCollections}
         >
           <ViewLayersIcon
             style={{ color: 'var(--affine-icon-color)' }}

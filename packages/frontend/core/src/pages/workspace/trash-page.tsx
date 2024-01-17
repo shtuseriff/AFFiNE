@@ -7,6 +7,8 @@ import {
   VirtualizedList,
 } from '@affine/core/components/page-list';
 import { PageListItemRenderer } from '@affine/core/components/page-list/page-group';
+import { ListTableHeader } from '@affine/core/components/page-list/page-header';
+import { useHeaderColDef } from '@affine/core/components/page-list/use-header-col-def';
 import { Header } from '@affine/core/components/pure/header';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
@@ -19,7 +21,7 @@ import { DeleteIcon } from '@blocksuite/icons';
 import type { PageMeta } from '@blocksuite/store';
 import { getCurrentStore } from '@toeverything/infra/atom';
 import { useAtomValue } from 'jotai';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { type LoaderFunction } from 'react-router-dom';
 import { NIL } from 'uuid';
 
@@ -100,10 +102,17 @@ export const TrashPage = () => {
 
     [permanentlyDeletePage, restoreFromTrash, t]
   );
-
+  const { pageHeaderColsDef } = useHeaderColDef();
+  const pageHeaderCols = useMemo(
+    () => pageHeaderColsDef(true),
+    [pageHeaderColsDef]
+  );
   const pageItemRenderer = useCallback((item: ListItem) => {
     return <PageListItemRenderer {...item} />;
   }, []);
+  const pageHeaderRenderer = useCallback(() => {
+    return <ListTableHeader headerCols={pageHeaderCols} />;
+  }, [pageHeaderCols]);
   return (
     <div className={styles.root}>
       <TrashHeader />
@@ -116,6 +125,7 @@ export const TrashPage = () => {
           blockSuiteWorkspace={currentWorkspace.blockSuiteWorkspace}
           operationsRenderer={pageOperationsRenderer}
           itemRenderer={pageItemRenderer}
+          headerRenderer={pageHeaderRenderer}
         />
       ) : (
         <EmptyPageList

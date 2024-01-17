@@ -330,8 +330,6 @@ function CollectionMetaToListItemProp(
   const itemProps: CollectionListItemProps = {
     collectionId: item.id,
     title: item.title,
-    createDate: new Date(item.createDate),
-    updatedDate: item.updatedDate ? new Date(item.updatedDate) : undefined,
     to:
       props.rowAsLink && !props.selectable
         ? `/workspace/${props.blockSuiteWorkspace.id}/collection/${item.id}`
