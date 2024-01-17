@@ -3,10 +3,8 @@ import { Loading } from '@affine/component/ui/loading';
 import { Tooltip } from '@affine/component/ui/tooltip';
 import { useWorkspaceBlobObjectUrl } from '@affine/core/hooks/use-workspace-blob';
 import { useWorkspaceInfo } from '@affine/core/hooks/use-workspace-info';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { UNTITLED_WORKSPACE_NAME } from '@affine/env/constant';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { type SyncEngineStatus, SyncEngineStep } from '@affine/workspace';
 import {
   CloudWorkspaceIcon,
   InformationFillDuotoneIcon,
@@ -14,7 +12,12 @@ import {
   NoNetworkIcon,
   UnsyncIcon,
 } from '@blocksuite/icons';
-import { useAtomValue } from 'jotai';
+import {
+  type SyncEngineStatus,
+  SyncEngineStep,
+  Workspace,
+} from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { debounce, mean } from 'lodash-es';
 import {
   forwardRef,
@@ -91,7 +94,7 @@ const useSyncEngineSyncProgress = () => {
   const [syncEngineStatus, setSyncEngineStatus] =
     useState<SyncEngineStatus | null>(null);
 
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
 
   // debounce sync engine status
   useEffect(() => {
@@ -197,7 +200,7 @@ export const WorkspaceCard = forwardRef<
   HTMLDivElement,
   HTMLAttributes<HTMLDivElement>
 >(({ ...props }, ref) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
 
   const information = useWorkspaceInfo(currentWorkspace.meta);
 

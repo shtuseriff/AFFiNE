@@ -1,26 +1,24 @@
-import {
-  currentWorkspaceAtom,
-  waitForCurrentWorkspaceAtom,
-  workspaceListAtom,
-} from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/core/shared';
 import { WorkspaceFlavour } from '@affine/env/workspace';
-import { assertExists } from '@blocksuite/global/utils';
-import { useAtom, useAtomValue } from 'jotai';
+import { WorkspaceManager } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
+import { useAtom } from 'jotai';
 import type { ReactElement } from 'react';
 import { lazy, Suspense, useCallback } from 'react';
 
-import type { SettingAtom } from '../atoms';
 import {
   authAtom,
   openCreateWorkspaceModalAtom,
   openDisableCloudAlertModalAtom,
   openSettingModalAtom,
   openSignOutModalAtom,
+  type SettingAtom,
 } from '../atoms';
 import { PaymentDisableModal } from '../components/affine/payment-disable';
 import { useAsyncCallback } from '../hooks/affine-async-hooks';
 import { useNavigateHelper } from '../hooks/use-navigate-helper';
+import { CurrentWorkspaceService } from '../modules/workspace/current-workspace';
+import { WorkspaceSubPath } from '../shared';
 import { signOutCloud } from '../utils/cloud-utils';
 
 const SettingModal = lazy(() =>
@@ -28,6 +26,7 @@ const SettingModal = lazy(() =>
     default: module.SettingModal,
   }))
 );
+
 const Auth = lazy(() =>
   import('../components/affine/auth').then(module => ({
     default: module.AuthModal,
@@ -68,10 +67,8 @@ const SignOutModal = lazy(() =>
 );
 
 export const Setting = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
   const [{ open, workspaceMetadata, activeTab }, setOpenSettingModalAtom] =
     useAtom(openSettingModalAtom);
-  assertExists(currentWorkspace);
 
   const onSettingClick = useCallback(
     ({
@@ -150,7 +147,9 @@ export const AuthModal = (): ReactElement => {
 };
 
 export function CurrentWorkspaceModals() {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useLiveData(
+    useService(CurrentWorkspaceService).currentWorkspace
+  );
   const [openDisableCloudAlertModal, setOpenDisableCloudAlertModal] = useAtom(
     openDisableCloudAlertModalAtom
   );
@@ -177,8 +176,12 @@ export function CurrentWorkspaceModals() {
 export const SignOutConfirmModal = () => {
   const { openPage } = useNavigateHelper();
   const [open, setOpen] = useAtom(openSignOutModalAtom);
-  const currentWorkspace = useAtomValue(currentWorkspaceAtom);
-  const workspaceList = useAtomValue(workspaceListAtom);
+  const currentWorkspace = useLiveData(
+    useService(CurrentWorkspaceService).currentWorkspace
+  );
+  const workspaces = useLiveData(
+    useService(WorkspaceManager).list.workspaceList
+  );
 
   const onConfirm = useAsyncCallback(async () => {
     setOpen(false);
@@ -186,14 +189,14 @@ export const SignOutConfirmModal = () => {
 
     // if current workspace is affine cloud, switch to local workspace
     if (currentWorkspace?.flavour === WorkspaceFlavour.AFFINE_CLOUD) {
-      const localWorkspace = workspaceList.find(
+      const localWorkspace = workspaces.find(
         w => w.flavour === WorkspaceFlavour.LOCAL
       );
       if (localWorkspace) {
         openPage(localWorkspace.id, WorkspaceSubPath.ALL);
       }
     }
-  }, [currentWorkspace?.flavour, openPage, setOpen, workspaceList]);
+  }, [currentWorkspace?.flavour, openPage, setOpen, workspaces]);
 
   return (
     <SignOutModal open={open} onOpenChange={setOpen} onConfirm={onConfirm} />

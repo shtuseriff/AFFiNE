@@ -11,7 +11,7 @@ import {
 } from '@affine/core/components/page-list';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { CollectionService } from '@affine/core/modules/collection';
 import type { Collection } from '@affine/env/filter';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
@@ -21,20 +21,18 @@ import {
   PageIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
+import { Workspace } from '@toeverything/infra';
 import { getCurrentStore } from '@toeverything/infra/atom';
+import { useService } from '@toeverything/infra/di';
+import { useLiveData } from '@toeverything/infra/livedata';
 import { useAtomValue } from 'jotai';
 import { useSetAtom } from 'jotai';
 import { useCallback, useEffect, useState } from 'react';
 import { type LoaderFunction, redirect, useParams } from 'react-router-dom';
 
-import {
-  collectionsCRUDAtom,
-  pageCollectionBaseAtom,
-} from '../../atoms/collections';
 import { useAllPageListConfig } from '../../hooks/affine/use-all-page-list-config';
 import { useNavigateHelper } from '../../hooks/use-navigate-helper';
 import { WorkspaceSubPath } from '../../shared';
-import { getWorkspaceSetting } from '../../utils/workspace-setting';
 import { AllPage } from './all-page/all-page';
 import * as styles from './collection.css';
 
@@ -48,18 +46,19 @@ export const loader: LoaderFunction = async args => {
 };
 
 export const Component = function CollectionPage() {
-  const { collections, loading } = useAtomValue(pageCollectionBaseAtom);
+  const collectionService = useService(CollectionService);
+  const collections = useLiveData(collectionService.collections);
   const navigate = useNavigateHelper();
   const params = useParams();
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const workspace = useService(Workspace);
   const collection = collections.find(v => v.id === params.collectionId);
   const pushNotification = useSetAtom(pushNotificationAtom);
   useEffect(() => {
-    if (!loading && !collection) {
+    if (!collection) {
       navigate.jumpToSubPath(workspace.id, WorkspaceSubPath.ALL);
-      const collection = getWorkspaceSetting(
-        workspace.blockSuiteWorkspace
-      ).collectionsTrash.find(v => v.collection.id === params.collectionId);
+      const collection = collectionService.collectionsTrash.value.find(
+        v => v.collection.id === params.collectionId
+      );
       let text = 'Collection is not exist';
       if (collection) {
         if (collection.userId) {
@@ -75,16 +74,13 @@ export const Component = function CollectionPage() {
     }
   }, [
     collection,
-    loading,
+    collectionService.collectionsTrash.value,
     navigate,
     params.collectionId,
     pushNotification,
     workspace.blockSuiteWorkspace,
     workspace.id,
   ]);
-  if (loading) {
-    return null;
-  }
   if (!collection) {
     return null;
   }
@@ -98,16 +94,16 @@ export const Component = function CollectionPage() {
 const isWindowsDesktop = environment.isDesktop && environment.isWindows;
 
 const Placeholder = ({ collection }: { collection: Collection }) => {
-  const { updateCollection } = useCollectionManager(collectionsCRUDAtom);
+  const collectionService = useCollectionManager(useService(CollectionService));
   const { node, open } = useEditCollection(useAllPageListConfig());
   const openPageEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'page');
-    updateCollection(ret);
-  }, [open, collection, updateCollection]);
+    collectionService.updateCollection(ret);
+  }, [open, collection, collectionService]);
   const openRuleEdit = useAsyncCallback(async () => {
     const ret = await open({ ...collection }, 'rule');
-    updateCollection(ret);
-  }, [collection, open, updateCollection]);
+    collectionService.updateCollection(ret);
+  }, [collection, open, collectionService]);
   const [showTips, setShowTips] = useState(false);
   useEffect(() => {
     setShowTips(!localStorage.getItem('hide-empty-collection-help-info'));

@@ -3,12 +3,13 @@ import {
   filterPageByRules,
   useCollectionManager,
 } from '@affine/core/components/page-list';
+import { CollectionService } from '@affine/core/modules/collection';
 import type { PageMeta } from '@blocksuite/store';
+import { useService } from '@toeverything/infra/di';
 import { useAtomValue } from 'jotai';
 import { useMemo } from 'react';
 
 import { allPageModeSelectAtom } from '../../atoms';
-import { collectionsCRUDAtom } from '../../atoms/collections';
 import { usePageHelper } from '../../components/blocksuite/block-suite-page-list/utils';
 import type { BlockSuiteWorkspace } from '../../shared';
 
@@ -19,8 +20,9 @@ export const useFilteredPageMetas = (
 ) => {
   const { isPreferredEdgeless } = usePageHelper(workspace);
   const pageMode = useAtomValue(allPageModeSelectAtom);
-  const { currentCollection, isDefault } =
-    useCollectionManager(collectionsCRUDAtom);
+  const { currentCollection, isDefault } = useCollectionManager(
+    useService(CollectionService)
+  );
 
   const filteredPageMetas = useMemo(
     () =>

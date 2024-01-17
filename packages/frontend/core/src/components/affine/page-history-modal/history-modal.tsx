@@ -9,14 +9,18 @@ import { openSettingModalAtom, type PageMode } from '@affine/core/atoms';
 import { useIsWorkspaceOwner } from '@affine/core/hooks/affine/use-is-workspace-owner';
 import { useAsyncCallback } from '@affine/core/hooks/affine-async-hooks';
 import { useUserSubscription } from '@affine/core/hooks/use-subscription';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { SubscriptionPlan } from '@affine/graphql';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import { CloseIcon, ToggleCollapseIcon } from '@blocksuite/icons';
-import type { Page, Workspace } from '@blocksuite/store';
+import {
+  type Page,
+  type Workspace as BlockSuiteWorkspace,
+} from '@blocksuite/store';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
+import { Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra/di';
 import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   Fragment,
@@ -49,7 +53,7 @@ import * as styles from './styles.css';
 export interface PageHistoryModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  workspace: Workspace;
+  workspace: BlockSuiteWorkspace;
   pageId: string;
 }
 
@@ -164,8 +168,8 @@ const planPromptClosedAtom = atom(false);
 
 const PlanPrompt = () => {
   const [subscription] = useUserSubscription();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
-  const isOwner = useIsWorkspaceOwner(currentWorkspace.meta);
+  const workspace = useService(Workspace);
+  const isOwner = useIsWorkspaceOwner(workspace.meta);
   const freePlan = subscription?.plan === SubscriptionPlan.Free;
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
@@ -417,7 +421,7 @@ const PageHistoryManager = ({
   pageId,
   onClose,
 }: {
-  workspace: Workspace;
+  workspace: BlockSuiteWorkspace;
   pageId: string;
   onClose: () => void;
 }) => {
@@ -544,8 +548,7 @@ export const PageHistoryModal = ({
 
 export const GlobalPageHistoryModal = () => {
   const [{ open, pageId }, setState] = useAtom(pageHistoryModalAtom);
-  const workspace = useAtomValue(waitForCurrentWorkspaceAtom);
-
+  const workspace = useService(Workspace);
   const handleOpenChange = useCallback(
     (open: boolean) => {
       setState(prev => ({

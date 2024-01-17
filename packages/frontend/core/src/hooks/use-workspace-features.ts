@@ -5,9 +5,8 @@ import {
   enabledFeaturesQuery,
   setWorkspaceExperimentalFeatureMutation,
 } from '@affine/graphql';
-import { useAtomValue } from 'jotai';
+import { useService, Workspace } from '@toeverything/infra';
 
-import { waitForCurrentWorkspaceAtom } from '../modules/workspace';
 import { useAsyncCallback } from './affine-async-hooks';
 import { useMutateQueryResource, useMutation } from './use-mutation';
 import { useQueryImmutable } from './use-query';
@@ -15,7 +14,7 @@ import { useQueryImmutable } from './use-query';
 const emptyFeatures: FeatureType[] = [];
 
 export const useWorkspaceAvailableFeatures = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const isCloudWorkspace =
     currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const { data } = useQueryImmutable(
@@ -32,7 +31,7 @@ export const useWorkspaceAvailableFeatures = () => {
 };
 
 export const useWorkspaceEnabledFeatures = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const isCloudWorkspace =
     currentWorkspace.flavour === WorkspaceFlavour.AFFINE_CLOUD;
   const { data } = useQueryImmutable(
@@ -49,7 +48,7 @@ export const useWorkspaceEnabledFeatures = () => {
 };
 
 export const useSetWorkspaceFeature = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { trigger, isMutating } = useMutation({
     mutation: setWorkspaceExperimentalFeatureMutation,
   });

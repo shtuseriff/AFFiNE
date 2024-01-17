@@ -10,7 +10,7 @@ import {
   VirtualizedPageList,
 } from '@affine/core/components/page-list';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
+import { CollectionService } from '@affine/core/modules/collection';
 import { Trans } from '@affine/i18n';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import {
@@ -19,9 +19,13 @@ import {
   PlusIcon,
   ViewLayersIcon,
 } from '@blocksuite/icons';
-import type { PageMeta, Workspace } from '@blocksuite/store';
+import type {
+  PageMeta,
+  Workspace as BlockSuiteWorkspace,
+} from '@blocksuite/store';
+import { useService, Workspace } from '@toeverything/infra';
 import clsx from 'clsx';
-import { useAtomValue, useSetAtom } from 'jotai';
+import { useSetAtom } from 'jotai';
 import {
   type PropsWithChildren,
   useCallback,
@@ -32,7 +36,6 @@ import {
 } from 'react';
 import { NIL } from 'uuid';
 
-import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { HubIsland } from '../../../components/affine/hub-island';
 import { usePageHelper } from '../../../components/blocksuite/block-suite-page-list/utils';
 import { Header } from '../../../components/pure/header';
@@ -51,7 +54,7 @@ import { FilterContainer } from './all-page-filter';
 
 const PageListHeader = () => {
   const t = useAFFiNEI18N();
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const title = useMemo(() => {
     if (setting.isDefault) {
       return t['com.affine.all-pages.header']();
@@ -80,7 +83,7 @@ const PageListHeader = () => {
 };
 
 const usePageOperationsRenderer = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -135,7 +138,7 @@ const PageListFloatingToolbar = ({
   selectedIds: string[];
   onClose: () => void;
 }) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { setTrashModal } = useTrashModalHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -188,7 +191,7 @@ const NewPageButton = ({
   size?: 'small' | 'default';
   testId?: string;
 }>) => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { importFile, createEdgeless, createPage } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -210,10 +213,10 @@ const AllPageHeader = ({
   workspace,
   showCreateNew,
 }: {
-  workspace: Workspace;
+  workspace: BlockSuiteWorkspace;
   showCreateNew: boolean;
 }) => {
-  const setting = useCollectionManager(collectionsCRUDAtom);
+  const setting = useCollectionManager(useService(CollectionService));
   const config = useAllPageListConfig();
   const userInfo = useDeleteCollectionInfo();
   const isWindowsDesktop = environment.isDesktop && environment.isWindows;
@@ -252,7 +255,7 @@ const AllPageHeader = ({
 
 // even though it is called all page, it is also being used for collection route as well
 export const AllPage = () => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const { isPreferredEdgeless } = usePageHelper(
     currentWorkspace.blockSuiteWorkspace
   );
@@ -325,7 +328,7 @@ export const AllPage = () => {
 export const Component = () => {
   performanceRenderLogger.info('AllPage');
 
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const currentCollection = useSetAtom(currentCollectionAtom);
   const navigateHelper = useNavigateHelper();
 

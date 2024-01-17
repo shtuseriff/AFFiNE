@@ -2,13 +2,13 @@ import { MainContainer } from '@affine/component/workspace';
 import { usePageDocumentTitle } from '@affine/core/hooks/use-global-state';
 import { DebugLogger } from '@affine/debug';
 import { fetchWithTraceReport } from '@affine/graphql';
-import { globalBlockSuiteSchema } from '@affine/workspace';
 import {
-  createAffineCloudBlobStorage,
-  createStaticBlobStorage,
+  AffineCloudBlobStorage,
+  StaticBlobStorage,
 } from '@affine/workspace-impl';
 import { assertExists } from '@blocksuite/global/utils';
 import { type Page, Workspace } from '@blocksuite/store';
+import { globalBlockSuiteSchema } from '@toeverything/infra';
 import { noop } from 'foxact/noop';
 import type { ReactElement } from 'react';
 import { useCallback } from 'react';
@@ -85,10 +85,10 @@ export const loader: LoaderFunction = async ({ params }) => {
     id: workspaceId,
     blobStorages: [
       () => ({
-        crud: createAffineCloudBlobStorage(workspaceId),
+        crud: new AffineCloudBlobStorage(workspaceId),
       }),
       () => ({
-        crud: createStaticBlobStorage(),
+        crud: new StaticBlobStorage(),
       }),
     ],
     schema: globalBlockSuiteSchema,

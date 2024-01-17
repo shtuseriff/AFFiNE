@@ -2,12 +2,13 @@ import { PageDetailSkeleton } from '@affine/component/page-detail-skeleton';
 import { ResizePanel } from '@affine/component/resize-panel';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { useWorkspaceStatus } from '@affine/core/hooks/use-workspace-status';
-import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
-import { WorkspaceSubPath } from '@affine/core/shared';
-import { globalBlockSuiteSchema, SyncEngineStep } from '@affine/workspace';
+import { CollectionService } from '@affine/core/modules/collection';
 import type { AffineEditorContainer } from '@blocksuite/presets';
-import type { Page, Workspace } from '@blocksuite/store';
-import { appSettingAtom } from '@toeverything/infra/atom';
+import type { Page } from '@blocksuite/store';
+import type { Workspace as BlockSuiteWorkspace } from '@blocksuite/store';
+import { globalBlockSuiteSchema, SyncEngineStep } from '@toeverything/infra';
+import { appSettingAtom, Workspace } from '@toeverything/infra';
+import { useService } from '@toeverything/infra';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import {
   memo,
@@ -21,7 +22,6 @@ import { useParams } from 'react-router-dom';
 import type { Map as YMap } from 'yjs';
 
 import { setPageModeAtom } from '../../../atoms';
-import { collectionsCRUDAtom } from '../../../atoms/collections';
 import { currentModeAtom, currentPageIdAtom } from '../../../atoms/mode';
 import { AffineErrorBoundary } from '../../../components/affine/affine-error-boundary';
 import { HubIsland } from '../../../components/affine/hub-island';
@@ -37,7 +37,7 @@ import { TopTip } from '../../../components/top-tip';
 import { useRegisterBlocksuiteEditorCommands } from '../../../hooks/affine/use-register-blocksuite-editor-commands';
 import { usePageDocumentTitle } from '../../../hooks/use-global-state';
 import { useNavigateHelper } from '../../../hooks/use-navigate-helper';
-import { performanceRenderLogger } from '../../../shared';
+import { performanceRenderLogger, WorkspaceSubPath } from '../../../shared';
 import { PageNotFound } from '../../404';
 import * as styles from './detail-page.css';
 import { DetailPageHeader, RightSidebarHeader } from './detail-page-header';
@@ -102,7 +102,7 @@ const DetailPageLayout = ({
 const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
   const currentPageId = page.id;
   const { openPage, jumpToSubPath } = useNavigateHelper();
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const blockSuiteWorkspace = currentWorkspace.blockSuiteWorkspace;
 
   const pageMeta = useBlockSuitePageMeta(blockSuiteWorkspace).find(
@@ -111,7 +111,8 @@ const DetailPageImpl = memo(function DetailPageImpl({ page }: { page: Page }) {
 
   const isInTrash = pageMeta?.trash;
 
-  const { setTemporaryFilter } = useCollectionManager(collectionsCRUDAtom);
+  const collectionService = useService(CollectionService);
+  const { setTemporaryFilter } = useCollectionManager(collectionService);
   const mode = useAtomValue(currentModeAtom);
   const setPageMode = useSetAtom(setPageModeAtom);
   useRegisterBlocksuiteEditorCommands(currentPageId, mode);
@@ -212,7 +213,7 @@ const useForceUpdate = () => {
   const [, setCount] = useState(0);
   return useCallback(() => setCount(count => count + 1), []);
 };
-const useSafePage = (workspace: Workspace, pageId: string) => {
+const useSafePage = (workspace: BlockSuiteWorkspace, pageId: string) => {
   const forceUpdate = useForceUpdate();
   useEffect(() => {
     const disposable = workspace.slots.pagesUpdated.on(() => {
@@ -225,7 +226,7 @@ const useSafePage = (workspace: Workspace, pageId: string) => {
 };
 
 export const DetailPage = ({ pageId }: { pageId: string }): ReactElement => {
-  const currentWorkspace = useAtomValue(waitForCurrentWorkspaceAtom);
+  const currentWorkspace = useService(Workspace);
   const currentSyncEngineStep = useWorkspaceStatus(
     currentWorkspace,
     s => s.engine.sync.step
