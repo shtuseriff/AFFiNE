@@ -11,6 +11,7 @@ export const useWorkspaceQuota = (workspaceId: string) => {
       id: workspaceId,
     },
   });
+
   const changeToHumanReadable = useCallback((value: string | number) => {
     return bytes.format(bytes.parse(value));
   }, []);
@@ -20,11 +21,11 @@ export const useWorkspaceQuota = (workspaceId: string) => {
   const storageQuota = BigInt(quotaData.storageQuota);
   const usedSize = BigInt(quotaData.usedSize);
 
-  const humanReadableBlobLimit = changeToHumanReadable(quotaData.blobLimit);
+  const humanReadableBlobLimit = changeToHumanReadable(blobLimit.toString());
   const humanReadableStorageQuota = changeToHumanReadable(
-    quotaData.storageQuota
+    storageQuota.toString()
   );
-  const humanReadableUsedSize = changeToHumanReadable(quotaData.usedSize);
+  const humanReadableUsedSize = changeToHumanReadable(usedSize.toString());
 
   return {
     blobLimit,

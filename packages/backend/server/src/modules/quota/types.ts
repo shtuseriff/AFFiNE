@@ -1,4 +1,5 @@
-import { Field, Float, ObjectType } from '@nestjs/graphql';
+import { Field, ObjectType } from '@nestjs/graphql';
+import { SafeIntResolver } from 'graphql-scalars';
 import { z } from 'zod';
 
 import { commonFeatureSchema, FeatureKind } from '../features';
@@ -42,13 +43,13 @@ export type Quota = z.infer<typeof QuotaSchema>;
 
 @ObjectType()
 export class QuotaQueryType {
-  @Field(() => Float)
+  @Field(() => SafeIntResolver)
   storageQuota!: number;
 
-  @Field(() => Float)
+  @Field(() => SafeIntResolver)
   usedSize!: number;
 
-  @Field(() => Float)
+  @Field(() => SafeIntResolver)
   blobLimit!: number;
 }
 

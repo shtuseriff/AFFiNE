@@ -95,10 +95,16 @@ export class BlobEngine {
               await remote.set(key, data);
             }
           } catch (err) {
-            logger.error(
-              `error when sync ${key} from [${this.local.name}] to [${remote.name}]`,
-              err
-            );
+            const code = (err as any)[0].extensions.code;
+            if (code === 413) {
+              this.isOverCapacity = true;
+              logger.error('Storage or blob over capacity', err);
+            } else {
+              logger.error(
+                `error when sync ${key} from [${this.local.name}] to [${remote.name}]`,
+                err
+              );
+            }
           }
         }
       }
@@ -164,7 +170,7 @@ export class BlobEngine {
             const code = err[0].extensions.code;
             if (code === 413) {
               this.isOverCapacity = true;
-              logger.error('Storage over capacity', err);
+              logger.error('Storage or blob over capacity', err);
             } else {
               logger.error('Error when uploading to peer', err);
             }

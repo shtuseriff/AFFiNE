@@ -192,9 +192,9 @@ type InvitationType {
 }
 
 type QuotaQueryType {
-  storageQuota: Float!
-  usedSize: Float!
-  blobLimit: Float!
+  storageQuota: SafeInt!
+  usedSize: SafeInt!
+  blobLimit: SafeInt!
 }
 
 type TokenType {
