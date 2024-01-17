@@ -260,7 +260,9 @@ export const createComponent = <
     const elementRef = React.useRef<I | null>(null);
 
     // Props to be passed to React.createElement
-    const reactProps: Record<string, unknown> = {};
+    const reactProps: Record<string, unknown> = {
+      'data-lit-react-wrapper': elementClass.name,
+    };
     const elementProps: Record<string, unknown> = {};
 
     if (elementRef.current === null) {

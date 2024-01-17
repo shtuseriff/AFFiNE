@@ -6,13 +6,7 @@ import type { CommandCategory } from '@toeverything/infra/command';
 import clsx from 'clsx';
 import { Command, useCommandState } from 'cmdk';
 import { useAtom, useAtomValue } from 'jotai';
-import {
-  Suspense,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { Suspense, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
   cmdkQueryAtom,

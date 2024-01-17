@@ -1,5 +1,6 @@
 import { createReactComponentFromLit } from '@affine/component';
 import {
+  BiDirectionalLinkPanel,
   DocEditor,
   DocTitle,
   EdgelessEditor,
@@ -7,9 +8,14 @@ import {
 } from '@blocksuite/presets';
 import { type Page } from '@blocksuite/store';
 import clsx from 'clsx';
-import React, { forwardRef, useEffect, useRef } from 'react';
+import React, { forwardRef, useEffect, useMemo, useRef } from 'react';
 
-import { docModeSpecs, edgelessModeSpecs } from './specs';
+import {
+  docModeSpecs,
+  edgelessModeSpecs,
+  type InlineRenderers,
+  patchSpecs,
+} from './specs';
 import * as styles from './styles.css';
 
 const adapted = {
@@ -29,18 +35,27 @@ const adapted = {
     react: React,
     elementClass: EdgelessEditor,
   }),
+  BiDirectionalLinkPanel: createReactComponentFromLit({
+    react: React,
+    elementClass: BiDirectionalLinkPanel,
+  }),
 };
 
 interface BlocksuiteDocEditorProps {
   page: Page;
+  customRenderers?: InlineRenderers;
   // todo: add option to replace docTitle with custom component (e.g., for journal page)
 }
 
 export const BlocksuiteDocEditor = forwardRef<
   DocEditor,
   BlocksuiteDocEditorProps
->(function BlocksuiteDocEditor({ page }, ref) {
+>(function BlocksuiteDocEditor({ page, customRenderers }, ref) {
   const titleRef = useRef<DocTitle>(null);
+
+  const specs = useMemo(() => {
+    return patchSpecs(docModeSpecs, customRenderers);
+  }, [customRenderers]);
 
   useEffect(() => {
     // auto focus the title
@@ -55,26 +70,17 @@ export const BlocksuiteDocEditor = forwardRef<
   return (
     <div className={styles.docEditorRoot}>
       <div className={clsx('affine-doc-viewport', styles.affineDocViewport)}>
-        <adapted.DocTitle
-          data-affine-doc-title
-          className={styles.adapterWrapperContainer}
-          page={page}
-          ref={titleRef}
-        />
+        <adapted.DocTitle page={page} ref={titleRef} />
         {/* We will replace page meta tags with our own implementation */}
-        <adapted.PageMetaTags
-          data-affine-page-meta-tags
-          className={styles.adapterWrapperContainer}
-          page={page}
-        />
+        <adapted.PageMetaTags page={page} />
         <adapted.DocEditor
-          data-affine-doc-editor
-          className={styles.adapterWrapperContainer}
+          className={styles.docContainer}
           ref={ref}
           page={page}
-          specs={docModeSpecs}
+          specs={specs}
           hasViewport={false}
         />
+        <adapted.BiDirectionalLinkPanel page={page} />
       </div>
     </div>
   );
@@ -83,13 +89,9 @@ export const BlocksuiteDocEditor = forwardRef<
 export const BlocksuiteEdgelessEditor = forwardRef<
   EdgelessEditor,
   BlocksuiteDocEditorProps
->(function BlocksuiteEdgelessEditor({ page }, ref) {
-  return (
-    <adapted.EdgelessEditor
-      className={styles.adapterWrapperContainer}
-      ref={ref}
-      page={page}
-      specs={edgelessModeSpecs}
-    />
-  );
+>(function BlocksuiteEdgelessEditor({ page, customRenderers }, ref) {
+  const specs = useMemo(() => {
+    return patchSpecs(edgelessModeSpecs, customRenderers);
+  }, [customRenderers]);
+  return <adapted.EdgelessEditor ref={ref} page={page} specs={specs} />;
 });

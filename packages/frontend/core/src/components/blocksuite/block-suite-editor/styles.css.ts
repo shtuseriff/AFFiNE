@@ -26,6 +26,7 @@ export const affineDocViewport = style({
   },
 });
 
-export const adapterWrapperContainer = style({
-  display: 'contents',
+export const docContainer = style({
+  display: 'block',
+  flexGrow: 1,
 });
