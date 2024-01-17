@@ -10,6 +10,7 @@ export * from './workspace';
 
 import type { ServiceCollection } from './di';
 import { CleanupService } from './lifecycle';
+import { configurePageServices } from './page';
 import { GlobalCache, GlobalState, MemoryMemento } from './storage';
 import {
   configureTestingWorkspaceServices,
@@ -19,6 +20,7 @@ import {
 export function configureInfraServices(services: ServiceCollection) {
   services.add(CleanupService);
   configureWorkspaceServices(services);
+  configurePageServices(services);
 }
 
 export function configureTestingInfraServices(services: ServiceCollection) {
