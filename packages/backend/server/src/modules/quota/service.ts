@@ -5,6 +5,8 @@ import { FeatureKind } from '../features';
 import { QuotaConfig } from './quota';
 import { QuotaType } from './types';
 
+type Transaction = Parameters<Parameters<PrismaService['$transaction']>[0]>[0];
+
 @Injectable()
 export class QuotaService {
   constructor(private readonly prisma: PrismaService) {}
@@ -83,20 +85,7 @@ export class QuotaService {
     expiredAt?: Date
   ) {
     await this.prisma.$transaction(async tx => {
-      const hasSameActivatedQuota = await tx.userFeatures
-        .count({
-          where: {
-            user: {
-              id: userId,
-            },
-            feature: {
-              type: FeatureKind.Quota,
-              feature: quota,
-            },
-            activated: true,
-          },
-        })
-        .then(count => count > 0);
+      const hasSameActivatedQuota = await this.hasQuota(userId, quota, tx);
 
       if (hasSameActivatedQuota) {
         // don't need to switch
@@ -150,8 +139,10 @@ export class QuotaService {
     });
   }
 
-  async hasQuota(userId: string, quota: QuotaType) {
-    return this.prisma.userFeatures
+  async hasQuota(userId: string, quota: QuotaType, transaction?: Transaction) {
+    const executor = transaction ?? this.prisma;
+
+    return executor.userFeatures
       .count({
         where: {
           userId,
