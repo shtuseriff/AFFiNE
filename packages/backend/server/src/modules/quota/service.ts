@@ -83,6 +83,26 @@ export class QuotaService {
     expiredAt?: Date
   ) {
     await this.prisma.$transaction(async tx => {
+      const hasSameActivatedQuota = await tx.userFeatures
+        .count({
+          where: {
+            user: {
+              id: userId,
+            },
+            feature: {
+              type: FeatureKind.Quota,
+              feature: quota,
+            },
+            activated: true,
+          },
+        })
+        .then(count => count > 0);
+
+      if (hasSameActivatedQuota) {
+        // don't need to switch
+        return;
+      }
+
       const latestPlanVersion = await tx.features.aggregate({
         where: {
           feature: quota,
