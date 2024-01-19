@@ -118,10 +118,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleClientHandshakeSync(
     @CurrentUser() user: UserType,
     @MessageBody() workspaceId: string,
-    @MessageBody() version: string | undefined,
+    @MessageBody('version') version: string | undefined,
     @ConnectedSocket() client: Socket
   ): Promise<EventResponse<{ clientId: string }>> {
-    if (typeof version === 'string' && version !== AFFiNE.version) {
+    if (version !== AFFiNE.version) {
+      client.emit('server-version-rejected', {
+        currentVersion: version,
+        requiredVersion: AFFiNE.version,
+        reason: `Client version${
+          version ? ` ${version}` : ''
+        } is outdated, please update to ${AFFiNE.version}`,
+      });
       return {
         error: new EventError(
           EventErrorCode.VERSION_REJECTED,

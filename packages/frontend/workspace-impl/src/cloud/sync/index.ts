@@ -8,9 +8,10 @@ import { MultipleBatchSyncSender } from './batch-sync-sender';
 
 const logger = new DebugLogger('affine:storage:socketio');
 
-export function createAffineStorage(
-  workspaceId: string
-): SyncStorage & { disconnect: () => void } {
+export function createAffineStorage(workspaceId: string): SyncStorage & {
+  disconnect: () => void;
+  onReject(reject: (reason: RejectByVersion) => void): void;
+} {
   logger.debug('createAffineStorage', workspaceId);
   const socket = getIoManager().socket('/');
 
@@ -162,6 +163,11 @@ export function createAffineStorage(
       socket.emit('client-leave-sync', workspaceId);
       socket.off('connect', handleConnect);
     },
+    onReject(reject) {
+      socket.on('server-version-rejected', (msg: RejectByVersion) => {
+        reject(msg);
+      });
+    },
   };
 }
 
@@ -193,3 +199,9 @@ export function createAffineStaticStorage(workspaceId: string): SyncStorage {
     },
   };
 }
+
+type RejectByVersion = {
+  currVersion: string;
+  requiredVersion: string;
+  reason: string;
+};

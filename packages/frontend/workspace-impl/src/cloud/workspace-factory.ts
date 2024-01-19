@@ -35,9 +35,13 @@ export const cloudWorkspaceFactory: WorkspaceFactory = {
     });
 
     const affineStorage = createAffineStorage(metadata.id);
-    const syncEngine = new SyncEngine(bs.doc, createLocalStorage(metadata.id), [
-      affineStorage,
-    ]);
+    const remoteStorage = [affineStorage];
+
+    const syncEngine = new SyncEngine(
+      bs.doc,
+      createLocalStorage(metadata.id),
+      remoteStorage
+    );
 
     const awarenessProviders = [
       createBroadcastChannelAwarenessProvider(
@@ -46,11 +50,22 @@ export const cloudWorkspaceFactory: WorkspaceFactory = {
       ),
       createCloudAwarenessProvider(metadata.id, bs.awarenessStore.awareness),
     ];
+
     const engine = new WorkspaceEngine(
       blobEngine,
       syncEngine,
       awarenessProviders
     );
+
+    affineStorage.onReject(reason => {
+      console.error('affine storage reject, fallback to local:', reason);
+      //remove remote storage and awareness provider
+      remoteStorage.pop()?.disconnect();
+      awarenessProviders.pop()?.disconnect();
+      // restart sync engine with local source
+      engine.forceStop();
+      engine.start();
+    });
 
     setupEditorFlags(bs);
 
