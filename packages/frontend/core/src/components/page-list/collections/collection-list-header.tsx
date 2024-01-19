@@ -2,7 +2,7 @@ import { Button } from '@affine/component';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
 import type { ReactElement } from 'react';
 
-import * as styles from './collection-list.css';
+import * as styles from './collection-list-header.css';
 
 export const CollectionListHeader = ({
   node,
@@ -19,7 +19,9 @@ export const CollectionListHeader = ({
         <div className={styles.allPagesHeaderTitle}>
           {t['com.affine.collections.header']()}
         </div>
-        <Button onClick={onCreate}>New Collection</Button>
+        <Button className={styles.newCollectionButton} onClick={onCreate}>
+          New Collection
+        </Button>
       </div>
       {node}
     </>

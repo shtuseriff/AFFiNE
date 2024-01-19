@@ -12,7 +12,7 @@ import { PageListItemRenderer } from '../../page-group';
 import { ListTableHeader } from '../../page-header';
 import type { ListItem } from '../../types';
 import { useHeaderColDef } from '../../use-header-col-def';
-import { VirtualizedList } from '../../virtualized-page-list';
+import { VirtualizedList } from '../../virtualized-list';
 import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
 import { EmptyList } from './select-page';

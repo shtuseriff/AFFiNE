@@ -3,16 +3,16 @@ import { usePageHelper } from '@affine/core/components/blocksuite/block-suite-pa
 import {
   currentCollectionAtom,
   type ListItem,
+  ListTableHeader,
+  PageListItemRenderer,
   TrashOperationCell,
+  useFilteredPageMetas,
+  useHeaderColDef,
   VirtualizedList,
 } from '@affine/core/components/page-list';
-import { PageListItemRenderer } from '@affine/core/components/page-list/page-group';
-import { ListTableHeader } from '@affine/core/components/page-list/page-header';
-import { useHeaderColDef } from '@affine/core/components/page-list/use-header-col-def';
 import { Header } from '@affine/core/components/pure/header';
 import { WindowsAppControls } from '@affine/core/components/pure/header/windows-app-controls';
 import { useBlockSuiteMetaHelper } from '@affine/core/hooks/affine/use-block-suite-meta-helper';
-import { useFilteredPageMetas } from '@affine/core/hooks/affine/use-filtered-page-metas';
 import { useBlockSuitePageMeta } from '@affine/core/hooks/use-block-suite-page-meta';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';

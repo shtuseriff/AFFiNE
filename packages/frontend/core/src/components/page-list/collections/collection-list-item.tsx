@@ -10,7 +10,7 @@ import type {
   PageListItemProps,
 } from '../types';
 import { ColWrapper, stopPropagation } from '../utils';
-import * as styles from './collections-list-item.css';
+import * as styles from './collection-list-item.css';
 
 const ListTitleCell = ({
   title,

@@ -9,7 +9,7 @@ import { useCallback, useState } from 'react';
 import { FilterList } from '../../filter';
 import { VariableSelect } from '../../filter/vars';
 import type { ListItem } from '../../types';
-import { VirtualizedList } from '../../virtualized-page-list';
+import { VirtualizedList } from '../../virtualized-list';
 import { AffineShapeIcon } from '../affine-shape';
 import type { AllPageListConfig } from './edit-collection';
 import * as styles from './edit-collection.css';
