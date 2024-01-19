@@ -12,7 +12,7 @@ export const LocalQuotaModal = () => {
   const [open, setOpen] = useAtom(openQuotaModalAtom);
 
   const checkBlobSize = useCallback((blob: Blob) => {
-    const size = BigInt(blob.size);
+    const size = blob.size;
     return size < bytes('100MB');
   }, []);
 
