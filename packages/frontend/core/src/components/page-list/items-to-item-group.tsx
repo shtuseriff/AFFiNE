@@ -11,28 +11,32 @@ const getDateGroupDefinitions = <T extends ListItem>(
   {
     id: 'today',
     label: <Trans i18nKey="com.affine.today" />,
-    match: item => withinDaysAgo(new Date(item[key] ?? item.createDate), 1),
+    match: item =>
+      withinDaysAgo(new Date(item[key] ?? item.createDate ?? ''), 1),
   },
   {
     id: 'yesterday',
     label: <Trans i18nKey="com.affine.yesterday" />,
-    match: item => betweenDaysAgo(new Date(item[key] ?? item.createDate), 1, 2),
+    match: item =>
+      betweenDaysAgo(new Date(item[key] ?? item.createDate ?? ''), 1, 2),
   },
   {
     id: 'last7Days',
     label: <Trans i18nKey="com.affine.last7Days" />,
-    match: item => betweenDaysAgo(new Date(item[key] ?? item.createDate), 2, 7),
+    match: item =>
+      betweenDaysAgo(new Date(item[key] ?? item.createDate ?? ''), 2, 7),
   },
   {
     id: 'last30Days',
     label: <Trans i18nKey="com.affine.last30Days" />,
     match: item =>
-      betweenDaysAgo(new Date(item[key] ?? item.createDate), 7, 30),
+      betweenDaysAgo(new Date(item[key] ?? item.createDate ?? ''), 7, 30),
   },
   {
     id: 'moreThan30Days',
     label: <Trans i18nKey="com.affine.moreThan30Days" />,
-    match: item => !withinDaysAgo(new Date(item[key] ?? item.createDate), 30),
+    match: item =>
+      !withinDaysAgo(new Date(item[key] ?? item.createDate ?? ''), 30),
   },
 ];
 

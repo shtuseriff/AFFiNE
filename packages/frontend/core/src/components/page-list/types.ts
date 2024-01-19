@@ -7,11 +7,15 @@ export type ListItem = PageMeta | CollectionMeta | TagMeta;
 
 export interface CollectionMeta extends Collection {
   title: string;
+  createDate?: Date;
+  updatedDate?: Date;
 }
 
 export type TagMeta = {
   id: string;
   title: string;
+  createDate?: Date;
+  updatedDate?: Date;
 };
 // TODO: consider reducing the number of props here
 // using type instead of interface to make it Record compatible
