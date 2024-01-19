@@ -7,6 +7,7 @@ import {
 } from '@affine/graphql';
 import { fetcher } from '@affine/graphql';
 import type { BlobStorage } from '@affine/workspace';
+import { BlobStorageOverCapacity } from '@affine/workspace';
 
 import { bufferToBlob } from '../utils/buffer-to-blob';
 
@@ -31,14 +32,26 @@ export const createAffineCloudBlobStorage = (
     },
     set: async (key, value) => {
       // set blob will check blob size & quota
-      const result = await fetcher({
+      return await fetcher({
         query: setBlobMutation,
         variables: {
           workspaceId,
           blob: new File([value], key),
         },
-      });
-      return result.setBlob;
+      })
+        .then(res => res.setBlob)
+        .catch(err => {
+          if (err[0].extensions && err[0].extensions.code === 413) {
+            const newErr = new BlobStorageOverCapacity(
+              err[0].message,
+              err[0].path,
+              err[0].extensions
+            );
+
+            throw newErr;
+          }
+          throw err;
+        });
     },
     list: async () => {
       const result = await fetcher({

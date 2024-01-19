@@ -124,8 +124,9 @@ const useSyncEngineSyncProgress = () => {
       )
     );
     const disposableOverCapacity =
-      currentWorkspace.engine.blob.onCapacityChange.on(
-        debounce((isOver: boolean) => {
+      currentWorkspace.engine.blob.onStatusChange.on(
+        debounce(status => {
+          const isOver = status?.isStorageOverCapacity;
           if (!isOver) {
             setIsOverCapacity(false);
             return;

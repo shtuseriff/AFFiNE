@@ -5,6 +5,7 @@ import { useUserQuota } from '@affine/core/hooks/use-quota';
 import { useWorkspaceQuota } from '@affine/core/hooks/use-workspace-quota';
 import { waitForCurrentWorkspaceAtom } from '@affine/core/modules/workspace';
 import { useAFFiNEI18N } from '@affine/i18n/hooks';
+import bytes from 'bytes';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { useCallback, useEffect, useMemo } from 'react';
 
@@ -18,14 +19,6 @@ export const CloudQuotaModal = () => {
   const isFreePlanOwner = useMemo(() => {
     return isOwner && userQuota?.humanReadable.name.toLowerCase() === 'free';
   }, [isOwner, userQuota?.humanReadable.name]);
-
-  const checkBlobSize = useCallback(
-    (blob: Blob) => {
-      const size = BigInt(blob.size);
-      return size < workspaceQuota.blobLimit;
-    },
-    [workspaceQuota]
-  );
 
   const setSettingModalAtom = useSetAtom(openSettingModalAtom);
   const handleUpgradeConfirm = useCallback(() => {
@@ -65,18 +58,17 @@ export const CloudQuotaModal = () => {
   ]);
 
   useEffect(() => {
-    const disposable = currentWorkspace.engine.blob.onBlobSet.on(
-      blobSetEventArgs => {
-        if (!checkBlobSize(blobSetEventArgs.value)) {
-          setOpen(true);
-          blobSetEventArgs.updateShouldProceed(false);
-        }
-      }
+    currentWorkspace.engine.blob.singleBlobSizeLimit = bytes.parse(
+      workspaceQuota.blobLimit.toString()
     );
+
+    const disposable = currentWorkspace.engine.blob.onAbortLargeBlob.on(() => {
+      setOpen(true);
+    });
     return () => {
       disposable?.dispose();
     };
-  }, [checkBlobSize, currentWorkspace.engine.blob.onBlobSet, setOpen]);
+  }, [currentWorkspace.engine.blob, setOpen, workspaceQuota.blobLimit]);
 
   return (
     <ConfirmModal

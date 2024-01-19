@@ -807,7 +807,7 @@
   "com.affine.payment.member-limit.free.confirm": "Upgrade",
   "com.affine.payment.member-limit.pro.confirm": "Got it",
   "com.affine.payment.blob-limit.title": "You have reached the limit",
-  "com.affine.payment.blob-limit.description.local": "TThe maximum file upload size for local workspaces is {{quota}}.",
+  "com.affine.payment.blob-limit.description.local": "The maximum file upload size for local workspaces is {{quota}}.",
   "com.affine.payment.blob-limit.description.owner.free": "{{planName}} users can upload files with a maximum size of {{currentQuota}}. You can upgrade your account to unlock a maximum file size of {{upgradeQuota}}.",
   "com.affine.payment.blob-limit.description.owner.pro": "{{planName}} users can upload files with a maximum size of {{quota}}.",
   "com.affine.payment.blob-limit.description.member": "The maximum file upload size for this joined workspace is {{quota}}. You can contact the owner of this workspace.",

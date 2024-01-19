@@ -2,13 +2,13 @@ import { DebugLogger } from '@affine/debug';
 import { Slot } from '@blocksuite/global/utils';
 import { difference } from 'lodash-es';
 
-export interface BlobSetEventArgs {
-  key: string;
-  value: Blob;
-  updateShouldProceed: (proceed: boolean) => void;
-}
+import { BlobStorageOverCapacity } from './error';
 
 const logger = new DebugLogger('affine:blob-engine');
+
+export interface BlobStatus {
+  isStorageOverCapacity: boolean;
+}
 
 /**
  * # BlobEngine
@@ -19,15 +19,18 @@ const logger = new DebugLogger('affine:blob-engine');
  */
 export class BlobEngine {
   private abort: AbortController | null = null;
-  private _isOverCapacity: boolean = false;
-  onCapacityChange = new Slot<boolean>();
-  onBlobSet = new Slot<BlobSetEventArgs>();
+  private _status: BlobStatus = { isStorageOverCapacity: false };
+  onStatusChange = new Slot<BlobStatus>();
+  singleBlobSizeLimit: number = 100 * 1024 * 1024;
+  onAbortLargeBlob = new Slot<Blob>();
 
-  private set isOverCapacity(value: boolean) {
-    if (this._isOverCapacity !== value) {
-      this._isOverCapacity = value;
-      this.onCapacityChange.emit(value);
-    }
+  private set status(s: BlobStatus) {
+    logger.debug('status change', s);
+    this._status = s;
+    this.onStatusChange.emit(s);
+  }
+  get status() {
+    return this._status;
   }
 
   constructor(
@@ -95,16 +98,15 @@ export class BlobEngine {
               await remote.set(key, data);
             }
           } catch (err) {
-            const code = (err as any)[0].extensions.code;
-            if (code === 413) {
-              this.isOverCapacity = true;
-              logger.error('Storage or blob over capacity', err);
-            } else {
-              logger.error(
-                `error when sync ${key} from [${this.local.name}] to [${remote.name}]`,
-                err
-              );
+            if (err instanceof BlobStorageOverCapacity) {
+              this.status = {
+                isStorageOverCapacity: true,
+              };
             }
+            logger.error(
+              `error when sync ${key} from [${this.local.name}] to [${remote.name}]`,
+              err
+            );
           }
         }
       }
@@ -147,11 +149,10 @@ export class BlobEngine {
 
     let shouldProceed = true;
 
-    const updateShouldProceed = (proceed: boolean) => {
-      shouldProceed = proceed;
-    };
-
-    this.onBlobSet.emit({ key, value, updateShouldProceed });
+    if (value.size > this.singleBlobSizeLimit) {
+      this.onAbortLargeBlob.emit(value);
+      shouldProceed = false;
+    }
 
     if (!shouldProceed) {
       logger.error('blob over limit, abort set');
@@ -167,13 +168,7 @@ export class BlobEngine {
         .filter(r => !r.readonly)
         .map(peer =>
           peer.set(key, value).catch(err => {
-            const code = err[0].extensions.code;
-            if (code === 413) {
-              this.isOverCapacity = true;
-              logger.error('Storage or blob over capacity', err);
-            } else {
-              logger.error('Error when uploading to peer', err);
-            }
+            logger.error('Error when uploading to peer', err);
           })
         )
     )
@@ -183,7 +178,6 @@ export class BlobEngine {
             `blob ${key} update finish, but some peers failed to update`
           );
         } else {
-          this.isOverCapacity = false;
           logger.debug(`blob ${key} update finish`);
         }
       })
@@ -211,10 +205,6 @@ export class BlobEngine {
     }
 
     return Array.from(blobList);
-  }
-
-  isStorageOverCapacity() {
-    return this.isOverCapacity;
   }
 }
 
