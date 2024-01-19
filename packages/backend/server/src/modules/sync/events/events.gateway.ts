@@ -113,14 +113,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     metrics.socketio.gauge('realtime_connections').record(this.connectionCount);
   }
 
-  @Auth()
-  @SubscribeMessage('client-handshake-sync')
-  async handleClientHandshakeSync(
-    @CurrentUser() user: UserType,
-    @MessageBody() workspaceId: string,
-    @MessageBody('version') version: string | undefined,
-    @ConnectedSocket() client: Socket
-  ): Promise<EventResponse<{ clientId: string }>> {
+  checkVersion(client: Socket, version?: string) {
     if (version !== AFFiNE.version) {
       client.emit('server-version-rejected', {
         currentVersion: version,
@@ -135,6 +128,21 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
           `Client version ${version} is outdated, please update to ${AFFiNE.version}`
         ),
       };
+    }
+    return null;
+  }
+
+  @Auth()
+  @SubscribeMessage('client-handshake-sync')
+  async handleClientHandshakeSync(
+    @CurrentUser() user: UserType,
+    @MessageBody() workspaceId: string,
+    @MessageBody('version') version: string | undefined,
+    @ConnectedSocket() client: Socket
+  ): Promise<EventResponse<{ clientId: string }>> {
+    const versionError = this.checkVersion(client, version);
+    if (versionError) {
+      return versionError;
     }
 
     const canWrite = await this.permissions.tryCheckWorkspace(
@@ -190,29 +198,17 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @Auth()
   @SubscribeMessage('client-handshake')
   async handleClientHandShake(
-    @CurrentUser() user: UserType,
-    @MessageBody()
-    workspaceId: string,
+    @MessageBody() workspaceId: string,
     @ConnectedSocket() client: Socket
   ): Promise<EventResponse<{ clientId: string }>> {
-    const canWrite = await this.permissions.tryCheckWorkspace(
-      workspaceId,
-      user.id,
-      Permission.Write
-    );
-
-    if (canWrite) {
-      await client.join([`${workspaceId}:sync`, `${workspaceId}:awareness`]);
-      return {
-        data: {
-          clientId: client.id,
-        },
-      };
-    } else {
-      return {
-        error: new AccessDeniedError(workspaceId),
-      };
+    const versionError = this.checkVersion(client);
+    if (versionError) {
+      return versionError;
     }
+    // should unreachable
+    return {
+      error: new AccessDeniedError(workspaceId),
+    };
   }
 
   @SubscribeMessage('client-leave-sync')
@@ -243,118 +239,6 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         error: new NotInWorkspaceError(workspaceId),
       };
     }
-  }
-
-  /**
-   * @deprecated use `client-leave-sync` and `client-leave-awareness` instead
-   */
-  @SubscribeMessage('client-leave')
-  async handleClientLeave(
-    @MessageBody() workspaceId: string,
-    @ConnectedSocket() client: Socket
-  ): Promise<EventResponse> {
-    if (client.rooms.has(`${workspaceId}:sync`)) {
-      await client.leave(`${workspaceId}:sync`);
-    }
-    if (client.rooms.has(`${workspaceId}:awareness`)) {
-      await client.leave(`${workspaceId}:awareness`);
-    }
-    return {};
-  }
-
-  /**
-   * This is the old version of the `client-update` event without any data protocol.
-   * It only exists for backwards compatibility to adapt older clients.
-   *
-   * @deprecated
-   */
-  @SubscribeMessage('client-update')
-  async handleClientUpdateV1(
-    @MessageBody()
-    {
-      workspaceId,
-      guid,
-      update,
-    }: {
-      workspaceId: string;
-      guid: string;
-      update: string;
-    },
-    @ConnectedSocket() client: Socket
-  ) {
-    if (!client.rooms.has(`${workspaceId}:sync`)) {
-      this.logger.verbose(
-        `Client ${client.id} tried to push update to workspace ${workspaceId} without joining it first`
-      );
-      return;
-    }
-
-    const docId = new DocID(guid, workspaceId);
-
-    client
-      .to(`${docId.workspace}:sync`)
-      .emit('server-update', { workspaceId, guid, update });
-
-    // broadcast to all clients with newer version that only listen to `server-updates`
-    client
-      .to(`${docId.workspace}:sync`)
-      .emit('server-updates', { workspaceId, guid, updates: [update] });
-
-    const buf = Buffer.from(update, 'base64');
-    await this.docManager.push(docId.workspace, docId.guid, buf);
-  }
-
-  /**
-   * This is the old version of the `doc-load` event without any data protocol.
-   * It only exists for backwards compatibility to adapt older clients.
-   *
-   * @deprecated
-   */
-  @Auth()
-  @SubscribeMessage('doc-load')
-  async loadDocV1(
-    @ConnectedSocket() client: Socket,
-    @CurrentUser() user: UserType,
-    @MessageBody()
-    {
-      workspaceId,
-      guid,
-      stateVector,
-    }: {
-      workspaceId: string;
-      guid: string;
-      stateVector?: string;
-    }
-  ): Promise<{ missing: string; state?: string } | false> {
-    if (!client.rooms.has(`${workspaceId}:sync`)) {
-      const canRead = await this.permissions.tryCheckWorkspace(
-        workspaceId,
-        user.id
-      );
-      if (!canRead) {
-        return false;
-      }
-    }
-
-    const docId = new DocID(guid, workspaceId);
-    const doc = await this.docManager.get(docId.workspace, docId.guid);
-
-    if (!doc) {
-      return false;
-    }
-
-    const missing = Buffer.from(
-      encodeStateAsUpdate(
-        doc,
-        stateVector ? Buffer.from(stateVector, 'base64') : undefined
-      )
-    ).toString('base64');
-    const state = Buffer.from(encodeStateVector(doc)).toString('base64');
-
-    return {
-      missing,
-      state,
-    };
   }
 
   @SubscribeMessage('client-update-v2')
